@@ -88,22 +88,26 @@ function detectTypeFromText(text: string): string {
 export async function generateNGOReport(sosData: any[]) {
   try {
     if (!sosData || sosData.length === 0) {
-      return "No significant disaster activity reported. All systems operational.";
+      return "Current Status: NORMAL OPERATIONS. All localized incidents have been resolved. No critical alerts are currently active in the specified region. Monitoring continues.";
     }
 
     const summary = sosData
-      .map((s) => `[${s.type}] ${s.description} at ${s.lat},${s.lng}`)
+      .map((s) => `[${s.type}] ${s.description} at ${s.lat},${s.lng} (Status: ${s.status})`)
       .join('\n');
       
-    const prompt = `System Data (SOS Alerts):\n${summary}\n\nTask: As a Lead Disaster Response Analyst, provide a high-level Strategic Briefing:
-1) SITUATIONAL ASSESSMENT: Summarize current crisis clusters and density.
-2) RESOURCE ALLOCATION: Suggest where to deploy food vs medical units based on the data.
-3) OPERATIONAL RISK: Identify the most critical zones requiring immediate heavy rescue.
-4) 24-HOUR OUTLOOK: General recommendations for NGO field teams.
-Keep it professional and under 250 words.`;
+    const prompt = `System Data (SOS Alerts Log):\n${summary}\n\nTask: As a Lead Disaster Response Analyst for NGO Command, provide a high-level Strategic Briefing based on the data above.
+Include the following sections precisely:
+
+1) EXECUTIVE SUMMARY: A concise overview of the current crisis status.
+2) GEOGRAPHIC HOTSPOTS: Identify clusters and specific zones requiring immediate attention.
+3) RESOURCE & UNIT DEPLOYMENT: Recommendations for specialized team (Medical, Food, Rescue) positioning.
+4) LOGISTICAL RISKS: Identify potential bottlenecks or high-urgency zones based on alert density.
+5) 24-HOUR STRATEGIC OUTLOOK: Forecast and recommended stance for field operatives.
+
+Style: Professional, data-driven, and authoritative. Limit to 250 words total.`;
 
     const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'system', content: 'You are a professional emergency response analyst.' }, { role: 'user', content: prompt }],
       model: MODEL,
       temperature: 0.3,
       max_tokens: 1024,

@@ -3,6 +3,9 @@ import { Inter } from 'next/font/google';
 import '@/src/app/globals.css';
 import Navbar from '@/components/Navbar';
 import PWARegistration from '@/components/PWARegistration';
+import OfflineBanner from '@/components/OfflineBanner';
+
+import UserSync from '@/components/UserSync';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -35,8 +38,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         </head>
         <body className={`${inter.className} bg-black text-white min-h-screen`}>
+          <UserSync />
           <PWARegistration />
           <Navbar />
+          <OfflineBanner />
           <main>{children}</main>
         </body>
       </html>

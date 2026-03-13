@@ -23,10 +23,13 @@ export default function VolunteerPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoaded && user && !user.publicMetadata?.role) {
-      router.replace('/user-type');
+    if (isLoaded && user) {
+      if (!user.publicMetadata?.role) {
+        router.replace('/user-type');
+      }
     }
   }, [isLoaded, user, router]);
+  
   const [sosList, setSosList]         = useState<any[]>([]);
   const [acceptedMap, setAcceptedMap] = useState<Record<string, boolean>>({});
   const [taskMap, setTaskMap]         = useState<Record<string, string>>({});
@@ -41,6 +44,8 @@ export default function VolunteerPage() {
 
   // Unread badge tracking
   const [unreadCount, setUnreadCount] = useState(0);
+  const [broadcast, setBroadcast] = useState<{message: string, timestamp: number} | null>(null);
+  const [escalations, setEscalations] = useState<any[]>([]);
 
   useEffect(() => {
     // @ts-ignore
@@ -65,15 +70,12 @@ export default function VolunteerPage() {
 
   useEffect(() => {
     const fetchMissions = async () => {
-      // 1. Fetch all active/assigned SOS alerts
       const resSOS = await fetch('/api/sos');
       const dataSOS = await resSOS.json();
       if (Array.isArray(dataSOS)) setSosList(dataSOS);
 
-      // 2. Fetch my existing tasks to resume state
       const dbId = (user?.publicMetadata as any)?.dbId;
-      const clerkId = user?.id;
-      const uid = dbId || clerkId;
+      const uid = dbId || user?.id;
       
       if (uid) {
         const resTasks = await fetch(`/api/tasks?volunteerId=${uid}`);
@@ -99,13 +101,12 @@ export default function VolunteerPage() {
       setSosList((prev) => {
         if (prev.find((s) => s.id === newSOS.id)) return prev;
         
-        // Play notification sound
         try {
           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
           const oscillator = audioCtx.createOscillator();
           const gainNode = audioCtx.createGain();
           oscillator.type = 'sine';
-          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
           gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
           oscillator.connect(gainNode);
           gainNode.connect(audioCtx.destination);
@@ -113,9 +114,7 @@ export default function VolunteerPage() {
           oscillator.stop(audioCtx.currentTime + 0.2);
         } catch(e) {}
 
-        // Increment unread badge
         setUnreadCount(c => c + 1);
-
         return [newSOS, ...prev];
       });
     },
@@ -125,6 +124,32 @@ export default function VolunteerPage() {
     sos_resolved: ({ sosId }: { sosId: string }) => {
       setSosList((prev) => prev.filter((s) => s.id !== sosId));
     },
+    broadcast_receive: (data: any) => {
+      if (data.target === 'ALL' || data.target === 'VOLUNTEERS') {
+        setBroadcast(data);
+        // Play notification sound
+        try {
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.frequency.value = 660; gain.gain.value = 0.1;
+          osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 300);
+        } catch {}
+      }
+    },
+    escalation_alert: (data: any) => {
+      setEscalations(prev => [data, ...prev]);
+      // Urgent notification sound
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = 880; gain.gain.value = 0.2;
+        osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 700);
+      } catch {}
+    }
   });
 
   async function handleAccept(sosId: string) {
@@ -156,20 +181,16 @@ export default function VolunteerPage() {
     setAcceptedMap((prev) => { const n = { ...prev }; delete n[sosId]; return n; });
   }
 
-  // 1. Filter out accepted/resolved tasks
   let activeSOS = sosList.filter((s) => s.status !== 'RESOLVED' && !acceptedMap[s.id]);
 
-  // 2. Filter by Type
   if (filterType !== 'ALL') {
     activeSOS = activeSOS.filter((s) => s.type === filterType);
   }
 
-  // 3. Filter by Distance
   if (filterRadius !== Infinity && userLoc) {
     activeSOS = activeSOS.filter((s) => getDistanceInKm(userLoc.lat, userLoc.lng, s.lat, s.lng) <= filterRadius);
   }
 
-  // 4. Sort by Urgency (Critical > Medium > Low)
   activeSOS.sort((a, b) => {
     const getUrgency = (sos: any) => {
       if (sos.aiSuggestion?.includes('CRITICAL')) return 3;
@@ -181,7 +202,6 @@ export default function VolunteerPage() {
 
   const myTasks = sosList.filter((s) => acceptedMap[s.id]);
 
-  // Handle Tab Title updates
   useEffect(() => {
     if (unreadCount > 0) {
       document.title = `(${unreadCount}) New SOS - ResQNet`;
@@ -190,7 +210,6 @@ export default function VolunteerPage() {
     }
   }, [unreadCount]);
 
-  // Reset unread count when interacting
   useEffect(() => {
     const handleInteraction = () => setUnreadCount(0);
     window.addEventListener('click', handleInteraction);
@@ -199,7 +218,6 @@ export default function VolunteerPage() {
 
   return (
     <div className="h-[calc(100vh-[var(--navbar-height,4rem)])] bg-slate-50 flex overflow-hidden font-sans relative">
-      {/* LEFT PANEL */}
       <div className={`w-full flex-shrink-0 flex flex-col border-r-2 border-slate-200 bg-slate-50 overflow-hidden z-10 transition-all duration-500 ${showMap ? 'md:w-[500px]' : 'md:w-full'}`}>
         <div className="px-8 py-6 border-b-2 border-slate-200 bg-white flex items-center justify-between z-20 shadow-sm relative">
           <h2 className="text-slate-900 font-black text-2xl tracking-tight">Mission Control</h2>
@@ -210,8 +228,6 @@ export default function VolunteerPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 bg-slate-50 custom-scrollbar">
-          
-          {/* GAMIFICATION & SAFETY HUD */}
           <div className="mb-8 grid grid-cols-2 gap-3">
             <div className="bg-white border-2 border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Impact Score</span>
@@ -237,7 +253,6 @@ export default function VolunteerPage() {
             </div>
           )}
 
-          {/* ADVANCED FILTERING */}
           {myTasks.length === 0 && (
             <div className="mb-8 space-y-3">
               <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
@@ -333,7 +348,6 @@ export default function VolunteerPage() {
               )}
               {activeSOS.map((sos) => (
                 <div key={sos.id} className="slide-in relative">
-                  {/* "NEW" Indicator for unread alerts under 1 minute old */}
                   {(Date.now() - new Date(sos.createdAt).getTime() < 60000) && (
                     <span className="absolute -top-3 -right-3 z-10 bg-red-600 text-white text-[9px] font-black tracking-widest px-2 py-1 rounded-full shadow-lg border-2 border-white animate-bounce">
                       NEW ALERT
@@ -347,7 +361,6 @@ export default function VolunteerPage() {
         </div>
       </div>
 
-      {/* MAP */}
       {showMap && (
         <div className="hidden md:block flex-1 bg-white relative slide-in">
           <SOSMap 
@@ -360,7 +373,38 @@ export default function VolunteerPage() {
         </div>
       )}
 
-      {/* Floating Map Toggle Button */}
+      {/* BROADCAST NOTIFICATION */}
+      {broadcast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1500] w-[calc(100%-48px)] max-w-lg bg-slate-900 text-white rounded-3xl p-6 shadow-2xl border border-white/10 slide-in">
+           <div className="flex items-center gap-3 mb-3">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Strategic Broadcast</p>
+           </div>
+           <p className="text-sm font-black italic mb-6">"{broadcast.message}"</p>
+           <button onClick={() => setBroadcast(null)} className="w-full bg-white text-slate-900 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-slate-200 transition-all">ACKNOWLEDGE</button>
+        </div>
+      )}
+
+      {/* ESCALATION TOASTS */}
+      <div className="fixed bottom-6 left-6 z-[1600] flex flex-col gap-3 max-w-sm w-full">
+         {escalations.slice(0, 3).map((e, i) => (
+           <div key={i} className="bg-red-600 text-white p-5 rounded-2xl shadow-2xl border border-red-500 flex flex-col gap-3 animate-bounce-subtle">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2.5 py-1 rounded-md">UNATTENDED EMERGENCY</span>
+                <button onClick={() => setEscalations(prev => prev.filter((_, j) => i !== j))} className="text-white/60 hover:text-white">✕</button>
+              </div>
+              <p className="text-xs font-black leading-tight">Priority Escalation: {e.type} at {e.lat.toFixed(2)}, {e.lng.toFixed(2)}</p>
+              <p className="text-[10px] font-medium opacity-80 italic">Waiting {e.minutesWaiting}+ mins. Immediate response required.</p>
+              <button 
+                onClick={() => { handleAccept(e.sosId); setEscalations(prev => prev.filter((_, j) => i !== j)); }}
+                className="bg-white text-red-600 text-[10px] font-black uppercase tracking-widest py-2 rounded-lg hover:bg-slate-100 transition-all"
+              >
+                ACCEPT MISSION NOW
+              </button>
+           </div>
+         ))}
+      </div>
+
       <button 
         onClick={() => setShowMap(!showMap)}
         className="hidden md:flex fixed bottom-6 right-6 z-50 bg-slate-900 text-white shadow-xl hover:bg-slate-800 border-2 border-slate-700 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 items-center gap-2"
@@ -368,7 +412,6 @@ export default function VolunteerPage() {
         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
         {showMap ? 'HIDE TACTICAL MAP' : 'SHOW TACTICAL MAP'}
       </button>
-
     </div>
   );
 }

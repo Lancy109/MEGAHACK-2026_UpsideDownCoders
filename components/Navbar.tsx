@@ -24,8 +24,6 @@ export default function Navbar() {
         <div className="flex items-center gap-6">
           <div className="hidden sm:flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-slate-500 text-xs font-bold uppercase tracking-widest">System Online</span>
             </div>
             <Link href="/sms-sos" className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-full border border-slate-200 text-[10px] font-black uppercase tracking-widest transition-all">
               📱 SMS SOS
@@ -35,7 +33,7 @@ export default function Navbar() {
           <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
           {/* SOS Shortcut */}
-          <Link href="/panic" 
+          <Link href="/panic"
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-[0_4px_12px_rgba(239,68,68,0.3)] transition-all active:scale-95 animate-pulse">
             <span className="text-sm">🆘</span> Panic
           </Link>

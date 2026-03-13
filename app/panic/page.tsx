@@ -15,7 +15,7 @@ export default function PanicPage() {
   const [holdInterval, setHoldInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    detectGPS().then(setGps).catch(() => {});
+    detectGPS().then(setGps).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function PanicPage() {
       if (progress >= 100) {
         clearInterval(interval);
         setState('countdown');
-        setCountdown(5);
+        setCountdown(3);
       }
     }, 40); // 2 seconds hold
     setHoldInterval(interval);
@@ -147,9 +147,9 @@ export default function PanicPage() {
       {state === 'sending' && (
         <div className="text-center">
           <div className="relative mb-8 flex items-center justify-center h-32 w-32 mx-auto">
-             <div className="absolute w-full h-full border border-red-500/30 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
-             <div className="absolute w-20 h-20 border border-red-500/50 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
-             <div className="w-4 h-4 bg-red-600 rounded-full shadow-[0_0_20px_rgba(239,68,68,1)]" />
+            <div className="absolute w-full h-full border border-red-500/30 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+            <div className="absolute w-20 h-20 border border-red-500/50 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
+            <div className="w-4 h-4 bg-red-600 rounded-full shadow-[0_0_20px_rgba(239,68,68,1)]" />
           </div>
           <p className="text-white font-black text-3xl animate-pulse tracking-tight">TRANSMITTING SOS...</p>
           <p className="text-slate-500 text-sm mt-3 font-medium italic">Establishing priority uplink</p>
@@ -159,7 +159,7 @@ export default function PanicPage() {
       {state === 'sent' && (
         <div className="text-center slide-in flex flex-col items-center">
           <div className="w-24 h-24 rounded-full bg-emerald-900/40 border border-emerald-500/30 flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-             <div className="w-8 h-4 border-b-4 border-l-4 border-emerald-400 -rotate-45 -mt-2" />
+            <div className="w-8 h-4 border-b-4 border-l-4 border-emerald-400 -rotate-45 -mt-2" />
           </div>
           <h2 className="text-emerald-400 font-black text-4xl mb-4 tracking-tighter">BROADCAST SUCCESS</h2>
           <p className="text-slate-400 text-sm mb-12 max-w-xs font-medium">Emergency responders and nearby volunteers have been notified of your location.</p>
@@ -173,8 +173,8 @@ export default function PanicPage() {
       {state === 'error' && (
         <div className="text-center flex flex-col items-center">
           <div className="w-24 h-24 rounded-full bg-red-900/40 border border-red-500/30 flex flex-col items-center justify-center mb-8 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-             <div className="w-2 h-8 bg-red-500 rounded-full mb-2" />
-             <div className="w-2 h-2 bg-red-500 rounded-full" />
+            <div className="w-2 h-8 bg-red-500 rounded-full mb-2" />
+            <div className="w-2 h-2 bg-red-500 rounded-full" />
           </div>
           <p className="text-red-500 font-black text-2xl mb-6 uppercase tracking-widest">Broadcast Failed</p>
           <button onClick={() => setState('idle')} className="bg-red-600 hover:bg-red-700 text-white font-black px-8 py-4 rounded-2xl shadow-lg transition-all active:scale-95">RETRY NOW</button>

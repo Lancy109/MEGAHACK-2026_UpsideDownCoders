@@ -4,6 +4,9 @@ const next = require('next');
 const { Server } = require('socket.io');
 const { PrismaClient } = require('@prisma/client');
 
+// Fix Next 15/16 Turbopack multiple lockfile warning by strictly binding to project dir
+process.env.TURBOPACK_ROOT = process.cwd();
+
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();

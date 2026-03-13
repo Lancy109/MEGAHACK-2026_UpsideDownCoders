@@ -56,9 +56,9 @@ function decodePacket(data: DataView): SOSPacket | null {
 
 // Broadcast an SOS packet to nearby devices via BLE GATT
 export async function broadcastSOS(packet: SOSPacket): Promise<boolean> {
-  if (typeof navigator === 'undefined' || !navigator.bluetooth) return false;
+  if (typeof navigator === 'undefined' || !(navigator as any).bluetooth) return false;
   try {
-    const device = await navigator.bluetooth.requestDevice({
+    const device = await (navigator as any).bluetooth.requestDevice({
       filters: [{ services: [BLE_SERVICE_UUID] }],
     });
     const server = await device.gatt!.connect();
@@ -102,14 +102,14 @@ export async function startScanning(
   onPacket: (packet: SOSPacket) => void,
   uploadFn: (p: SOSPacket) => Promise<void>
 ): Promise<() => void> {
-  if (typeof navigator === 'undefined' || !navigator.bluetooth) {
+  if (typeof navigator === 'undefined' || !(navigator as any).bluetooth) {
     throw new Error('Web Bluetooth not supported');
   }
 
   // Try requestLEScan (Chrome flag) first
-  if ((navigator.bluetooth as any).requestLEScan) {
+  if ((navigator as any).bluetooth.requestLEScan) {
     try {
-      const scan = await (navigator.bluetooth as any).requestLEScan({
+      const scan = await (navigator as any).bluetooth.requestLEScan({
         filters: [{ services: [BLE_SERVICE_UUID] }],
       });
       const listener = (event: any) => {
@@ -119,17 +119,17 @@ export async function startScanning(
           handlePacket(packet, uploadFn);
         }
       };
-      navigator.bluetooth.addEventListener('advertisementreceived', listener);
+      (navigator as any).bluetooth.addEventListener('advertisementreceived', listener);
       return () => {
         scan.stop();
-        navigator.bluetooth.removeEventListener('advertisementreceived', listener);
+        (navigator as any).bluetooth.removeEventListener('advertisementreceived', listener);
       };
     } catch { /* fall through to GATT */ }
   }
 
   // Fallback: requestDevice + GATT connect + characteristic subscribe
   let stopped = false;
-  const device = await navigator.bluetooth.requestDevice({
+  const device = await (navigator as any).bluetooth.requestDevice({
     filters: [{ services: [BLE_SERVICE_UUID] }],
   });
   const server = await device.gatt!.connect();
