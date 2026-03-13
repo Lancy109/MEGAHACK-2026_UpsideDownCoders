@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResQNet - Offline</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        p {
+            color: #94a3b8;
+            max-width: 320px;
+            line-height: 1.6;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="icon">📡</div>
+    <h1>You are offline</h1>
+    <p>Your SOS has been saved and will be sent automatically when connection returns.</p>
+</body>
+</html>

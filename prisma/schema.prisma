@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  VICTIM
+  VOLUNTEER
+  NGO
+}
+enum SosType {
+  FOOD
+  MEDICAL
+  RESCUE
+}
+enum SosStatus {
+  ACTIVE
+  ASSIGNED
+  RESOLVED
+}
+enum SosSource {
+  INTERNET
+  BLUETOOTH
+  QUEUED
+  VOICE
+}
+enum TaskStatus {
+  ACCEPTED
+  ENROUTE
+  COMPLETED
+}
+
+model User {
+  id        String          @id @default(cuid())
+  name      String
+  phone     String
+  email     String          @unique
+  role      Role
+  lat       Float?
+  lng       Float?
+  createdAt DateTime        @default(now())
+  sosAlerts SosAlert[]
+  tasks     Task[]
+  ratings   VolunteerRating[]
+}
+
+model SosAlert {
+  id           String    @id @default(cuid())
+  userId       String
+  type         SosType
+  description  String
+  lat          Float
+  lng          Float
+  status       SosStatus @default(ACTIVE)
+  source       SosSource @default(INTERNET)
+  relayCount   Int       @default(0)
+  isVoiceSOS   Boolean   @default(false)
+  aiSuggestion String?
+  photoUrl     String?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id])
+  tasks        Task[]
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  sosId       String
+  volunteerId String
+  status      TaskStatus @default(ACCEPTED)
+  acceptedAt  DateTime   @default(now())
+  completedAt DateTime?
+  sos         SosAlert   @relation(fields: [sosId], references: [id])
+  volunteer   User       @relation(fields: [volunteerId], references: [id])
+}
+
+model VolunteerRating {
+  id           String   @id @default(cuid())
+  volunteerId  String
+  rating       Int
+  review       String?
+  createdAt    DateTime @default(now())
+  volunteer    User     @relation(fields: [volunteerId], references: [id])
+}
+
+model Resource {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // FOOD, MEDICAL, RESCUE
+  quantity  Int      @default(0)
+  unit      String   // kg, units, liters, etc.
+  location  String   // depot/camp name
+  ngoId     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  sosId       String
+  senderId    String
+  senderName  String
+  senderRole  String
+  message     String
+  messageType String   @default("TEXT")
+  createdAt   DateTime @default(now())
+}
