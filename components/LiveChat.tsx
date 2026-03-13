@@ -12,14 +12,16 @@ interface LiveChatProps {
 export default function LiveChat({ sosId, currentUserId, currentUserName, currentUserRole }: LiveChatProps) {
   const [input, setInput]         = useState('');
   const [sending, setSending]     = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<NodeJS.Timeout | null>(null);
 
   const { messages, hasMore, typingUsers, loadEarlier, sendMessage, emitTyping } = useChat(sosId, currentUserId);
 
-  // Auto-scroll on new messages
+  // Localized scroll to bottom on new messages
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = useCallback(async () => {
@@ -46,10 +48,10 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
   const typingList = Object.values(typingUsers);
 
   function getBubbleStyle(role: string, isMe: boolean) {
-    if (role === 'SYSTEM') return null; // handled separately
-    if (role === 'AI') return null;
-    if (isMe) return 'bg-blue-600 text-white shadow-md ml-auto border border-blue-600';
-    if (role === 'VOLUNTEER') return 'bg-slate-100 border border-slate-200 text-slate-800';
+    if (role === 'SYSTEM' || role === 'AI') return '';
+    if (isMe) return 'bg-blue-600 text-white shadow-sm border border-blue-500';
+    if (role === 'VOLUNTEER' || role === 'NGO') return 'bg-slate-800 text-slate-50 border border-slate-900';
+    if (role === 'VICTIM') return 'bg-slate-100 border border-slate-200 text-slate-800';
     return 'bg-white border-2 border-slate-100 text-slate-700 shadow-sm';
   }
 
@@ -65,7 +67,7 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-white custom-scrollbar">
+      <div ref={messageContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-white custom-scrollbar flex flex-col">
         {hasMore && (
           <button
             onClick={loadEarlier}
@@ -86,13 +88,11 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
         )}
 
         {messages.map((m) => {
-          const isMe = m.senderId === currentUserId;
-
           if (m.messageType === 'SYSTEM') {
             return (
-              <div key={m.id} className="flex justify-center">
-                <span className="text-[10px] text-slate-400 italic bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full font-medium">
-                  {m.message}
+              <div key={m.id} className="flex justify-center my-4">
+                <span className="text-[12px] text-slate-600 bg-white border-2 border-slate-200 px-6 py-2 rounded-2xl font-black uppercase tracking-[0.2em] shadow-sm">
+                   📢 {m.message}
                 </span>
               </div>
             );
@@ -100,29 +100,46 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
 
           if (m.messageType === 'AI') {
             return (
-              <div key={m.id} className="flex justify-center">
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-4 py-3 rounded-xl max-w-xs text-center font-medium">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-blue-500 mb-1">AI Guidance</p>
-                  {m.message}
+              <div key={m.id} className="flex justify-center my-6 w-full">
+                <div className="bg-blue-600 border-4 border-blue-400 text-white text-[15px] px-6 py-5 rounded-[2.5rem] max-w-[95%] shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-3 opacity-20">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2z"/></svg>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-200 mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]" />
+                    AI Commander Advice
+                  </p>
+                  <p className="leading-relaxed font-black italic tracking-tight">{m.message}</p>
                 </div>
               </div>
             );
           }
 
+          // Smarter "isMe" for demoing: Must match BOTH ID and Role
+          // This allows testing with 1 account in 2 windows (Victim/Volunteer)
+          const isMe = (String(m.senderId).trim() === String(currentUserId).trim()) && (m.senderRole === currentUserRole);
           const bubbleClass = getBubbleStyle(m.senderRole, isMe);
 
           return (
-            <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[78%] px-4 py-2.5 rounded-2xl text-sm ${bubbleClass}`}>
+            <div key={m.id} className={`flex w-full mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[85%] px-5 py-3 text-[16px] shadow-sm relative group ${bubbleClass} 
+                ${isMe 
+                  ? 'rounded-3xl rounded-tr-none ml-auto' 
+                  : 'rounded-3xl rounded-tl-none mr-auto'
+                }`}
+              >
                 {!isMe && (
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1 text-slate-500">
-                    {m.senderName} <span className="opacity-50">· {m.senderRole}</span>
+                  <p className={`text-[11px] font-black uppercase tracking-widest mb-1 ${m.senderRole === 'VICTIM' ? 'text-slate-500' : 'text-slate-200/90'}`}>
+                    {m.senderName || 'Anonymous'} <span className="opacity-80 ml-1 px-2 py-0.5 bg-black/30 rounded uppercase font-black text-[9px]">{m.senderRole}</span>
                   </p>
                 )}
-                <p className="leading-relaxed whitespace-pre-wrap">{m.message}</p>
-                <p className="text-[9px] text-right opacity-40 mt-1 font-medium">
-                  {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+                <p className="leading-snug whitespace-pre-wrap font-black tracking-tighter">{m.message}</p>
+                <div className={`flex items-center justify-between mt-1.5 opacity-60 group-hover:opacity-90 transition-opacity ${isMe ? 'flex-row-reverse' : ''}`}>
+                  <span className="text-[10px] font-bold">
+                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {isMe && <span className="text-[10px] ml-1.5">✓✓</span>}
+                </div>
               </div>
             </div>
           );
@@ -143,7 +160,6 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
             </div>
           </div>
         )}
-        <div ref={bottomRef} className="h-1" />
       </div>
 
       {/* Input */}

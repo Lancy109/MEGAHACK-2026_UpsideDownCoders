@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getDirectionsURL } from '@/utils/gps';
 
 const SERVICE_TYPES = [
@@ -13,14 +13,53 @@ export default function NearbyServices({ lat, lng }: { lat?: number; lng?: numbe
   const [activeType, setActiveType] = useState('hospital');
   const [places, setPlaces]         = useState<any[]>([]);
   const [loading, setLoading]       = useState(false);
+  const cacheRef = useRef<Record<string, any[]>>({});
+  const lastFetchRef = useRef<{ lat: number; lng: number; type: string } | null>(null);
+
+  // Helper to calculate distance for threshold check
+  const getDist = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  };
 
   useEffect(() => {
     if (!lat || !lng) return;
+
+    // 1. Instant Cache Load
+    const cacheKey = `${activeType}`;
+    if (cacheRef.current[cacheKey]) {
+      setPlaces(cacheRef.current[cacheKey]);
+    }
+
+    // 2. Threshold Check: Only fetch if moved > 200m or type changed
+    const moved = lastFetchRef.current 
+      ? getDist(lat, lng, lastFetchRef.current.lat, lastFetchRef.current.lng) > 200 
+      : true;
+    const typeChanged = lastFetchRef.current?.type !== activeType;
+
+    if (!moved && !typeChanged) return;
+
+    // 3. Debounced Fetch
     setLoading(true);
-    fetch(`/api/nearby?lat=${lat}&lng=${lng}&type=${activeType}`)
-      .then(r => r.json())
-      .then(data => { setPlaces(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
+    const timer = setTimeout(() => {
+      fetch(`/api/nearby?lat=${lat}&lng=${lng}&type=${activeType}`)
+        .then(r => r.json())
+        .then(data => {
+          const results = Array.isArray(data) ? data : [];
+          setPlaces(results);
+          cacheRef.current[cacheKey] = results;
+          lastFetchRef.current = { lat, lng, type: activeType };
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
   }, [lat, lng, activeType]);
 
   if (!lat || !lng) return null;

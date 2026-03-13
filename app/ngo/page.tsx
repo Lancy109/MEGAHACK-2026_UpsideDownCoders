@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useSocket } from '@/hooks/useSocket';
+import { useUser } from '@clerk/nextjs';
+import LiveChat from '@/components/LiveChat';
 
 const SOSMap = dynamic(() => import('@/components/SOSMap'), { ssr: false });
 
@@ -74,6 +76,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── SOS Detail Drawer ────────────────────────────────────────────────────────
 function SOSDrawer({ sos, onClose }: { sos: SOS | null; onClose: () => void }) {
+  const { user } = useUser();
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
@@ -149,6 +152,16 @@ function SOSDrawer({ sos, onClose }: { sos: SOS | null; onClose: () => void }) {
           </button>
         </div>
         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Created: {new Date(sos.createdAt).toLocaleString()}</p>
+        
+        <div className="pt-6 border-t border-slate-100">
+          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Tactical Comms</p>
+          <LiveChat 
+            sosId={sos.id} 
+            currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'ngo_fallback'} 
+            currentUserName={user?.fullName || 'NGO Staff'} 
+            currentUserRole="NGO" 
+          />
+        </div>
       </div>
     </div>
   );

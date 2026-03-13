@@ -6,9 +6,18 @@ let globalSocket: Socket | null = null;
 
 type EventMap = Record<string, (...args: any[]) => void>;
 
+/**
+ * useSocket hook with stale-closure protection.
+ * It uses 'relay' handlers to ensure that socket events always call 
+ * the latest available version of the provided callback.
+ */
 export function useSocket(events: EventMap = {}) {
   const eventsRef = useRef(events);
-  eventsRef.current = events;
+  
+  // Always keep the latest events in Ref to avoid stale closures
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
   useEffect(() => {
     if (!globalSocket) {
@@ -18,14 +27,23 @@ export function useSocket(events: EventMap = {}) {
     }
 
     const socket = globalSocket;
+    const activeHandlers: Record<string, (...args: any[]) => void> = {};
 
-    Object.entries(eventsRef.current).forEach(([event, handler]) => {
-      socket.on(event, handler);
+    // Register relay handlers for each event
+    Object.keys(eventsRef.current).forEach((event) => {
+      const relay = (...args: any[]) => {
+        if (eventsRef.current[event]) {
+          eventsRef.current[event](...args);
+        }
+      };
+      activeHandlers[event] = relay;
+      socket.on(event, relay);
     });
 
     return () => {
-      Object.keys(eventsRef.current).forEach((event) => {
-        socket.off(event);
+      // Clean up only the specific relay handlers used by this component instance
+      Object.entries(activeHandlers).forEach(([event, handler]) => {
+        socket.off(event, handler);
       });
     };
   }, []);

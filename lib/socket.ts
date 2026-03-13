@@ -19,3 +19,7 @@ export function emitTaskUpdate(data: any) {
 export function emitSOSResolved(sosId: string) {
   emitToAll('sos_resolved', { sosId });
 }
+
+export function emitSOSUpdate(sosData: any) {
+  emitToAll('sos_update', sosData);
+}

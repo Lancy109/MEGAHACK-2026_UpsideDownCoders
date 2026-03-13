@@ -95,6 +95,7 @@ export function useChat(sosId: string, currentUserId: string) {
     if (!data.error) {
       addMessages([data]);
       if (socket) {
+        // Emit for other users in the room
         socket.emit('broadcast_message', data);
       }
     }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import prisma from '@/lib/db';
 import { getAISuggestion } from '@/lib/ai';
-import { emitNewSOS } from '@/lib/socket';
+import { emitNewSOS, emitSOSUpdate } from '@/lib/socket';
 
 export async function POST(req: Request) {
   try {
@@ -28,7 +28,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const aiSuggestion = await getAISuggestion(type, description, language || 'English');
+    const fastAi = `IMMEDIATE STEPS: Stay calm and move to a safe, visible location. Signal rescue teams.
+URGENCY: PROCESSING (Real-time update forthcoming)`;
 
     const validSources = ['INTERNET', 'BLUETOOTH', 'QUEUED', 'VOICE'];
     const sos = await prisma.sosAlert.create({
@@ -38,12 +39,27 @@ export async function POST(req: Request) {
         lat,
         lng,
         userId: clerkUser.id,
-        aiSuggestion,
+        aiSuggestion: fastAi, // Start with fast response
         source: validSources.includes(source) ? source : 'INTERNET',
         isVoiceSOS: isVoiceSOS === true,
       },
       include: { user: { select: { name: true, phone: true } } },
     });
+
+    // Background task: Get high-quality Groq AI and update
+    (async () => {
+      try {
+        const groqAi = await getAISuggestion(type, description, language || 'English');
+        const updated = await prisma.sosAlert.update({
+          where: { id: sos.id },
+          data: { aiSuggestion: groqAi },
+          include: { user: { select: { name: true, phone: true } } },
+        });
+        emitSOSUpdate(updated);
+      } catch (e) {
+        console.error('Background AI update failed:', e);
+      }
+    })();
 
     emitNewSOS(sos);
     return NextResponse.json(sos, { status: 201 });

@@ -134,6 +134,11 @@ export default function VictimPage() {
           osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 300);
         } catch {}
       }
+    },
+    sos_update: (updatedSOS: any) => {
+      if (updatedSOS.id === submittedSosId) {
+        setAiAdvice(updatedSOS.aiSuggestion || '');
+      }
     }
   });
 
@@ -230,7 +235,7 @@ export default function VictimPage() {
       if (!res.ok) throw new Error(data.error || 'SOS failed');
       setAiAdvice(data.aiSuggestion || '');
       setSubmittedSosId(data.id);
-      setSubmitted(true);
+      setSubmitted(true); // Instant transition
     } catch (err: any) {
       if (!navigator.onLine) {
         await enqueueSOSPacket(sosPayload);
@@ -247,73 +252,89 @@ export default function VictimPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-2xl text-center bg-white p-10 lg:p-16 rounded-[2.5rem] border border-slate-200 shadow-xl">
-          <div className="mb-8 flex justify-center">
-            <div className="w-24 h-24 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center animate-bounce shadow-lg">
-              <div className="w-10 h-5 border-b-4 border-l-4 border-emerald-500 -rotate-45 -mt-2" />
-            </div>
-          </div>
-          <h2 className="text-3xl lg:text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase">{t.successTitle}</h2>
-          <p className="text-slate-500 mb-10 font-bold text-lg">{t.successMsg}</p>
-
-          {offlineSaved && (
-            <div className="bg-amber-950 border border-amber-700 rounded-2xl p-6 mb-8 text-center shadow-lg">
-              <p className="text-amber-400 font-black text-lg mb-1 flex items-center justify-center gap-2">📱 SAVED OFFLINE</p>
-              <p className="text-amber-500/80 text-xs font-bold uppercase tracking-wider">Your SOS is queued and will transmit automatically via priority uplink when signal returns.</p>
-              <div className="mt-4 flex items-center justify-center gap-3">
-                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                <span className="text-amber-600 text-[10px] font-black uppercase tracking-widest">Waiting for connection...</span>
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 p-4 lg:p-8 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Dashboard Header */}
+          <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center animate-pulse shadow-lg">
+                <div className="w-8 h-4 border-b-4 border-l-4 border-emerald-500 -rotate-45 -mt-1" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-2">{t.successTitle}</h2>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                  <p className="text-slate-500 font-bold text-sm tracking-tight">{t.successMsg}</p>
+                </div>
               </div>
             </div>
-          )}
-
-          {submittedSosId && !offlineSaved && (
-            <div className="mt-8 slide-in text-left">
-              <LiveChat 
-                sosId={submittedSosId}
-                currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'victim_fallback'}
-                currentUserName={user?.fullName || 'Victim'}
-                currentUserRole="VICTIM"
-              />
+            <div className="flex flex-col items-end gap-2">
+              <span className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200">
+                Mission Active
+              </span>
+              <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest">{t.protocol}</p>
             </div>
-          )}
-
-          {aiAdvice && (
-            <div className="bg-slate-900 text-white rounded-[2rem] p-8 text-left mb-8 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-10 text-7xl group-hover:scale-[1.15] transition-transform duration-700 font-black tracking-tighter italic">AI</div>
-              <h3 className="text-emerald-400 font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-                {t.analysisTitle}
-              </h3>
-              <div className="prose prose-invert max-w-none text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">
-                {aiAdvice}
-              </div>
-            </div>
-          )}
-
-          {submittedSosId && (
-            <div className="mb-8">
-              <LiveChat
-                sosId={submittedSosId}
-                currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || ''}
-                currentUserName={user?.fullName || 'Victim'}
-                currentUserRole="VICTIM"
-              />
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
-            <NearbyServices lat={gps?.lat} lng={gps?.lng} />
           </div>
 
-          <button
-            onClick={() => { setSubmitted(false); setSosType(null); setDescription(''); setOfflineSaved(false); }}
-            className="mt-12 text-slate-500 font-black text-xs uppercase tracking-widest hover:text-slate-900 transition-colors"
-          >
-            {t.another}
-          </button>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column: Intelligence & Units */}
+            <div className="lg:col-span-8 space-y-6">
+              {offlineSaved && (
+                <div className="bg-amber-950 border border-amber-800 rounded-[2rem] p-8 text-center shadow-xl relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-8 opacity-5 font-black text-6xl italic">OFFLINE</div>
+                   <p className="text-amber-400 font-black text-xl mb-2 flex items-center justify-center gap-3">
+                     <span className="text-2xl">⚠️</span> SAVED TO QUEUE
+                   </p>
+                   <p className="text-amber-500/80 text-sm font-bold uppercase tracking-wider mb-6">SOS ID: {Math.random().toString(36).substr(2, 6).toUpperCase()} • TRANSMITTING UPON RECONNECT</p>
+                   <div className="flex items-center justify-center gap-4">
+                     <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
+                     <span className="text-amber-600 text-[11px] font-black uppercase tracking-widest">Priority Uplink Standby</span>
+                   </div>
+                </div>
+              )}
+
+              {aiAdvice && (
+                <div className="bg-slate-900 text-white rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden group border-4 border-slate-800">
+                  <div className="absolute top-0 right-0 p-10 opacity-10 text-8xl group-hover:scale-110 transition-transform duration-700 font-black italic tracking-tighter">AI</div>
+                  <div className="relative z-10">
+                    <h3 className="text-emerald-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
+                      <span className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping shadow-[0_0_15px_rgba(52,211,153,0.8)]" />
+                      {t.analysisTitle}
+                    </h3>
+                    <div className="prose prose-invert max-w-none text-slate-200 text-lg md:text-xl leading-relaxed whitespace-pre-wrap font-bold tracking-tight">
+                      {aiAdvice}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
+                <NearbyServices lat={gps?.lat} lng={gps?.lng} />
+              </div>
+            </div>
+
+            {/* Right Column: Communication */}
+            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-8">
+              {submittedSosId && !offlineSaved && (
+                <div className="slide-in shadow-2xl">
+                  <LiveChat 
+                    sosId={submittedSosId}
+                    currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'victim_fallback'}
+                    currentUserName={user?.fullName || 'Victim'}
+                    currentUserRole="VICTIM"
+                  />
+                </div>
+              )}
+              
+              <button
+                onClick={() => { setSubmitted(false); setSosType(null); setDescription(''); setOfflineSaved(false); }}
+                className="w-full bg-white border-2 border-slate-200 text-slate-500 font-black text-xs uppercase tracking-widest py-6 rounded-[1.5rem] hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm active:scale-95"
+              >
+                ← {t.another}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
