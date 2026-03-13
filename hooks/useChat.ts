@@ -89,8 +89,18 @@ export function useChat(sosId: string, currentUserId: string) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ senderId: currentUserId, senderName, senderRole, message, messageType }),
     });
-    return res.json();
-  }, [sosId, currentUserId]);
+    const data = await res.json();
+    
+    // Add locally instantly for this user
+    if (!data.error) {
+      addMessages([data]);
+      if (socket) {
+        socket.emit('broadcast_message', data);
+      }
+    }
+    
+    return data;
+  }, [sosId, currentUserId, socket, addMessages]);
 
   const emitTyping = useCallback((isTyping: boolean, name: string) => {
     if (!socket) return;

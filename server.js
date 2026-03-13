@@ -46,6 +46,11 @@ app.prepare().then(() => {
       socket.to(`chat_${sosId}`).emit('typing_stop', { userId });
     });
 
+    // Relay messages (workaround for API route isolation)
+    socket.on('broadcast_message', (msg) => {
+      socket.to(`chat_${msg.sosId}`).emit('chat_message', msg);
+    });
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
     });

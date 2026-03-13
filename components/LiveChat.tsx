@@ -48,37 +48,40 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
   function getBubbleStyle(role: string, isMe: boolean) {
     if (role === 'SYSTEM') return null; // handled separately
     if (role === 'AI') return null;
-    if (isMe) return 'bg-red-50 border border-red-200 text-slate-800 ml-auto';
-    if (role === 'VOLUNTEER') return 'bg-blue-50 border border-blue-200 text-slate-800';
-    return 'bg-slate-100 border border-slate-200 text-slate-700';
+    if (isMe) return 'bg-blue-600 text-white shadow-md ml-auto border border-blue-600';
+    if (role === 'VOLUNTEER') return 'bg-slate-100 border border-slate-200 text-slate-800';
+    return 'bg-white border-2 border-slate-100 text-slate-700 shadow-sm';
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl flex flex-col overflow-hidden shadow-sm" style={{ height: 420 }}>
+    <div className="bg-white border-2 border-slate-200 rounded-[2rem] flex flex-col overflow-hidden shadow-sm" style={{ height: 460 }}>
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          <p className="text-slate-900 text-sm font-black uppercase tracking-widest">Mission Comms</p>
+      <div className="px-6 py-5 border-b-2 border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="flex items-center gap-3">
+          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <p className="text-slate-900 text-sm font-black uppercase tracking-[0.2em]">Mission Comms</p>
         </div>
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Live Channel</span>
+        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest border border-slate-200 px-2.5 py-1 rounded-lg bg-white">Live Channel</span>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-white custom-scrollbar">
         {hasMore && (
           <button
             onClick={loadEarlier}
-            className="w-full text-center text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 py-2 border border-slate-100 rounded-xl hover:border-slate-200 transition-all"
+            className="w-full text-center text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 hover:text-blue-700 py-3 border-2 border-blue-50 rounded-xl hover:bg-blue-50 transition-all"
           >
-            Load earlier messages
+            Load History Log
           </button>
         )}
 
         {messages.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">No messages yet</p>
-            <p className="text-slate-300 text-[10px] mt-1">Chat becomes active when a volunteer responds</p>
+          <div className="text-center py-16">
+            <div className="w-12 h-12 mx-auto bg-slate-50 border-2 border-slate-200 rounded-full flex items-center justify-center mb-4">
+              <span className="w-2 h-2 bg-slate-300 rounded-full animate-bounce" />
+            </div>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">COMMS SILENT</p>
+            <p className="text-slate-500 text-xs mt-2 font-medium">Channel activates upon engagement</p>
           </div>
         )}
 
@@ -128,38 +131,38 @@ export default function LiveChat({ sosId, currentUserId, currentUserName, curren
         {/* Typing indicator */}
         {typingList.length > 0 && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 border border-slate-200 px-4 py-2.5 rounded-2xl">
-              <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5">
-                <span>{typingList.join(', ')} {typingList.length === 1 ? 'is' : 'are'} typing</span>
-                <span className="flex gap-0.5 items-end">
-                  <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-[1rem]">
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.1em] flex items-center gap-2">
+                <span>{typingList.join(', ')} {typingList.length === 1 ? 'is' : 'are'} transmitting</span>
+                <span className="flex gap-1 items-end ml-1">
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </span>
               </p>
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="h-1" />
       </div>
 
       {/* Input */}
-      <div className="px-4 pb-4 pt-2 border-t border-slate-100 bg-white">
-        <div className="flex gap-2 items-end bg-slate-50 border border-slate-200 focus-within:border-slate-400 focus-within:bg-white rounded-xl p-2 transition-all">
+      <div className="px-5 pb-5 pt-3 border-t-2 border-slate-100 bg-white">
+        <div className="flex gap-3 items-end bg-slate-50 border-2 border-slate-200 focus-within:border-slate-400 focus-within:bg-white rounded-[1.5rem] p-3 transition-all">
           <textarea
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+            placeholder="Transmit message..."
             rows={1}
-            className="flex-1 bg-transparent text-slate-900 text-sm px-2 py-1 outline-none placeholder:text-slate-400 font-medium resize-none max-h-24"
+            className="flex-1 bg-transparent text-slate-900 text-sm px-3 py-2 outline-none placeholder:text-slate-400 font-medium resize-none max-h-24 custom-scrollbar"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="bg-slate-900 hover:bg-slate-700 disabled:opacity-30 text-white font-black px-4 py-2 rounded-lg text-xs transition-all active:scale-95 shrink-0"
+            className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black px-6 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shrink-0 shadow-sm"
           >
-            Send
+            SEND
           </button>
         </div>
       </div>

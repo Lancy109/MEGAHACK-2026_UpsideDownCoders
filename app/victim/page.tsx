@@ -109,9 +109,9 @@ const TRANSLATIONS: Record<string, any> = {
 };
 
 const SOS_TYPES = [
-  { type: 'FOOD',    icon: 'FOD', key: 'food',    color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-800 hover:border-yellow-400', ring: 'ring-yellow-300', active: 'border-yellow-500 bg-yellow-100' },
-  { type: 'MEDICAL', icon: 'MED', key: 'medical', color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-800 hover:border-red-400',             ring: 'ring-red-300',    active: 'border-red-500 bg-red-100' },
-  { type: 'RESCUE',  icon: 'RSC', key: 'rescue',  color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800 hover:border-blue-400',        ring: 'ring-blue-300',   active: 'border-blue-500 bg-blue-100' },
+  { type: 'FOOD', icon: 'FOD', key: 'food', color: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-800 hover:border-yellow-400', ring: 'ring-yellow-300', active: 'border-yellow-500 bg-yellow-100' },
+  { type: 'MEDICAL', icon: 'MED', key: 'medical', color: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-800 hover:border-red-400', ring: 'ring-red-300', active: 'border-red-500 bg-red-100' },
+  { type: 'RESCUE', icon: 'RSC', key: 'rescue', color: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800 hover:border-blue-400', ring: 'ring-blue-300', active: 'border-blue-500 bg-blue-100' },
 ];
 
 export default function VictimPage() {
@@ -119,6 +119,11 @@ export default function VictimPage() {
   const router = useRouter();
   const { isOnline } = useNetworkStatus();
   const { syncAll } = useSyncEngine();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoaded && user && !user.publicMetadata?.role) {
@@ -126,16 +131,16 @@ export default function VictimPage() {
     }
   }, [isLoaded, user, router]);
 
-  const [language, setLanguage]       = useState('English');
-  const [sosType, setSosType]         = useState<string | null>(null);
+  const [language, setLanguage] = useState('English');
+  const [sosType, setSosType] = useState<string | null>(null);
   const [description, setDescription] = useState('');
-  const [gps, setGps]                 = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsStatus, setGpsStatus]     = useState('idle');
-  const [loading, setLoading]         = useState(false);
-  const [submitted, setSubmitted]     = useState(false);
+  const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsStatus, setGpsStatus] = useState('idle');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [submittedSosId, setSubmittedSosId] = useState<string | null>(null);
-  const [aiAdvice, setAiAdvice]       = useState('');
-  const [error, setError]             = useState('');
+  const [aiAdvice, setAiAdvice] = useState('');
+  const [error, setError] = useState('');
   const [offlineSaved, setOfflineSaved] = useState(false);
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.English;
@@ -167,14 +172,14 @@ export default function VictimPage() {
   }
 
   async function handleSOSWithData(overrides: { description?: string; sosType?: string; isVoice?: boolean; source?: string } = {}) {
-    const finalType        = overrides.sosType || sosType;
+    const finalType = overrides.sosType || sosType;
     const finalDescription = overrides.description || description;
-    const isVoiceSOS       = overrides.isVoice || false;
-    const currentSource    = overrides.source || (isOnline ? 'INTERNET' : 'QUEUED');
+    const isVoiceSOS = overrides.isVoice || false;
+    const currentSource = overrides.source || (isOnline ? 'INTERNET' : 'QUEUED');
 
-    if (!finalType)            return setError(t.typeError);
+    if (!finalType) return setError(t.typeError);
     if (!finalDescription.trim()) return setError(t.descError);
-    if (!gps)                return setError(t.gpsRequired);
+    if (!gps) return setError(t.gpsRequired);
 
     setError('');
     setLoading(true);
@@ -226,14 +231,14 @@ export default function VictimPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-full max-w-lg text-center bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
-          <div className="mb-6 flex justify-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center animate-bounce shadow-sm">
-               <div className="w-8 h-4 border-b-4 border-l-4 border-emerald-500 -rotate-45 -mt-2" />
+        <div className="w-full max-w-2xl text-center bg-white p-10 lg:p-16 rounded-[2.5rem] border border-slate-200 shadow-xl">
+          <div className="mb-8 flex justify-center">
+            <div className="w-24 h-24 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center animate-bounce shadow-lg">
+              <div className="w-10 h-5 border-b-4 border-l-4 border-emerald-500 -rotate-45 -mt-2" />
             </div>
           </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">{t.successTitle}</h2>
-          <p className="text-slate-500 mb-8 font-medium">{t.successMsg}</p>
+          <h2 className="text-3xl lg:text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase">{t.successTitle}</h2>
+          <p className="text-slate-500 mb-10 font-bold text-lg">{t.successMsg}</p>
 
           {offlineSaved && (
             <div className="bg-amber-950 border border-amber-700 rounded-2xl p-6 mb-8 text-center shadow-lg">
@@ -246,11 +251,22 @@ export default function VictimPage() {
             </div>
           )}
 
+          {submittedSosId && !offlineSaved && (
+            <div className="mt-8 slide-in text-left">
+              <LiveChat 
+                sosId={submittedSosId}
+                currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'victim_fallback'}
+                currentUserName={user?.fullName || 'Victim'}
+                currentUserRole="VICTIM"
+              />
+            </div>
+          )}
+
           {aiAdvice && (
-            <div className="bg-slate-900 text-white rounded-3xl p-8 text-left mb-8 shadow-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl group-hover:scale-110 transition-transform duration-500 font-black tracking-tighter">AI</div>
-              <h3 className="text-emerald-400 font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+            <div className="bg-slate-900 text-white rounded-[2rem] p-8 text-left mb-8 shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-10 text-7xl group-hover:scale-[1.15] transition-transform duration-700 font-black tracking-tighter italic">AI</div>
+              <h3 className="text-emerald-400 font-black text-xs uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
                 {t.analysisTitle}
               </h3>
               <div className="prose prose-invert max-w-none text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium">
@@ -261,23 +277,23 @@ export default function VictimPage() {
 
           {submittedSosId && (
             <div className="mb-8">
-              <LiveChat 
-                sosId={submittedSosId} 
-                currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || ''} 
-                currentUserName={user?.fullName || 'Victim'} 
-                currentUserRole="VICTIM" 
+              <LiveChat
+                sosId={submittedSosId}
+                currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || ''}
+                currentUserName={user?.fullName || 'Victim'}
+                currentUserRole="VICTIM"
               />
             </div>
           )}
 
           <div className="space-y-4">
-             <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
-             <NearbyServices lat={gps?.lat} lng={gps?.lng} />
+            <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
+            <NearbyServices lat={gps?.lat} lng={gps?.lng} />
           </div>
 
           <button
             onClick={() => { setSubmitted(false); setSosType(null); setDescription(''); setOfflineSaved(false); }}
-            className="mt-12 text-slate-500 font-bold hover:text-slate-900 transition underline underline-offset-4"
+            className="mt-12 text-slate-500 font-black text-xs uppercase tracking-widest hover:text-slate-900 transition-colors"
           >
             {t.another}
           </button>
@@ -287,149 +303,149 @@ export default function VictimPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 lg:py-12">
-      <div className="max-w-5xl mx-auto bg-white p-6 lg:p-10 rounded-3xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">{t.header}</h1>
+    <div className="min-h-screen bg-slate-50 px-4 py-8 lg:p-12">
+      <div className="max-w-7xl mx-auto bg-white p-6 lg:p-12 rounded-[2.5rem] border border-slate-200 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pb-8 border-b border-slate-100">
+          <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-widest uppercase">{t.header}</h1>
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-                <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                <span className="text-[10px] font-black uppercase text-slate-500">{isOnline ? 'Online' : 'Offline'}</span>
-             </div>
-             <span className="bg-red-50 border border-red-200 text-red-600 text-[10px] uppercase tracking-widest font-black px-3 py-1.5 rounded-full animate-pulse shadow-sm shadow-red-100">
-               {t.live}
-             </span>
+            <div className="flex items-center gap-1.5 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
+              <div className={`w-2 h-2 rounded-full ${mounted && isOnline ? 'bg-emerald-500 shadow-sm' : 'bg-red-500 animate-pulse'}`} />
+              <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">
+                {mounted ? (isOnline ? 'Online' : 'Offline') : 'Connecting'}
+              </span>
+            </div>
+            <span className="bg-red-50 border border-red-200 text-red-600 text-[10px] uppercase tracking-widest font-black px-4 py-2 rounded-full animate-pulse shadow-sm shadow-red-100">
+              {t.live}
+            </span>
           </div>
         </div>
 
         {/* PANIC LINK */}
-        <Link href="/panic" 
-          className="block w-full bg-red-600/5 border border-red-600/20 hover:bg-red-600/10 transition-all rounded-2xl p-4 mb-8 group relative z-10 cursor-pointer">
-          <div className="flex items-center justify-between mb-1">
-             <span className="text-red-600 font-black text-sm uppercase tracking-tighter">Emergency Panic Button</span>
-             <span className="text-red-500 animate-pulse group-hover:translate-x-1 transition-transform">→</span>
+        <Link href="/panic"
+          className="block w-full bg-red-50 border border-red-200 hover:bg-red-100 transition-all rounded-[2rem] p-6 mb-12 group relative z-10 cursor-pointer shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-red-700 font-black text-lg uppercase tracking-widest group-hover:text-red-600 transition-colors">Emergency Panic Button</span>
+            <span className="text-red-500 animate-pulse group-hover:translate-x-2 transition-transform font-black">→</span>
           </div>
-          <p className="text-red-900/40 text-[10px] font-bold uppercase tracking-widest">Hold to broadcast SOS instantly with zero form filling</p>
+          <p className="text-red-600/70 text-xs font-bold uppercase tracking-widest">Hold to broadcast SOS instantly with zero form filling</p>
         </Link>
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-10">
           <div>
             {/* LANGUAGE */}
-            <div className="mb-8">
-          <label className="text-slate-500 font-bold text-xs uppercase tracking-wider block mb-3">{t.langLabel}</label>
-          <div className="flex gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
-            {LANGUAGES.map((lang) => (
-              <button
-                key={lang}
-                onClick={() => setLanguage(lang)}
-                className={`flex-1 py-3 text-sm rounded-lg font-bold transition-all ${
-                  language === lang
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {lang}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* VOICE SOS OPTION */}
-        <VoiceSOS 
-           language={language}
-           onVoiceSOSReady={handleVoiceSOSReady}
-           onTranscriptOnly={handleTranscriptOnly}
-        />
-
-        <div className="flex items-center gap-4 my-10">
-           <div className="flex-1 h-px bg-slate-100" />
-           <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Manual Entry Protocol</span>
-           <div className="flex-1 h-px bg-slate-100" />
-        </div>
-
-        {/* SOS TYPE */}
-        <div className="mb-8">
-          <label className="text-slate-500 font-bold text-xs uppercase tracking-wider block mb-3">{t.helpLabel}</label>
-          <div className="grid grid-cols-3 gap-3">
-            {SOS_TYPES.map((st) => (
-              <button
-                key={st.type}
-                onClick={() => setSosType(st.type)}
-                className={`py-5 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-2 ${st.color} ${
-                  sosType === st.type ? `ring-4 ${st.ring} rotate-1 scale-105 shadow-sm ${st.active}` : 'bg-white opacity-80 hover:opacity-100'
-                }`}
-              >
-                <span className="text-4xl">{st.icon}</span>
-                <span className="text-[10px] leading-tight text-center font-black uppercase tracking-tighter">{t[st.key]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* DESCRIPTION */}
-        <div className="mb-8">
-          <label className="text-slate-500 font-bold text-xs uppercase tracking-wider block mb-3">{t.briefLabel}</label>
-          <textarea
-            rows={4} value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={t.placeholder}
-            className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100 text-slate-900 rounded-xl px-5 py-4 resize-none outline-none transition-all placeholder:text-slate-400 font-medium text-sm"
-          />
-        </div>
-
-        {/* GPS */}
-        <div className="mb-8 flex flex-col gap-2">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {gpsStatus === 'detecting' && <><span className="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse shadow-sm shadow-yellow-200" /><span className="text-slate-700 text-sm font-bold">{t.detecting}</span></>}
-              {gpsStatus === 'detected'  && <><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm shadow-emerald-200" /><span className="text-emerald-700 text-sm font-bold">{t.locked}: {gps?.lat.toFixed(4)}, {gps?.lng.toFixed(4)}</span></>}
-              {gpsStatus === 'error'     && <><span className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm shadow-red-200" /><span className="text-red-700 text-sm font-bold">{t.gpsError}</span></>}
-              {gpsStatus === 'idle'      && <><span className="w-2.5 h-2.5 bg-slate-300 rounded-full" /><span className="text-slate-500 text-sm font-bold">{t.waiting}</span></>}
+            <div className="mb-10">
+              <label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] block mb-4">{t.langLabel}</label>
+              <div className="flex gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className={`flex-1 py-3 text-xs uppercase tracking-widest rounded-xl font-black transition-all ${language === lang
+                        ? 'bg-white text-slate-900 shadow-md border border-slate-200'
+                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                      }`}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            <button 
-              onClick={() => {
-                setGpsStatus('detecting');
-                detectGPS()
-                  .then((coords) => { setGps(coords); setGpsStatus('detected'); })
-                  .catch(() => setGpsStatus('error'));
-              }}
-              className="text-blue-600 font-bold text-xs uppercase hover:underline"
+
+            {/* VOICE SOS OPTION */}
+            <VoiceSOS
+              language={language}
+              onVoiceSOSReady={handleVoiceSOSReady}
+              onTranscriptOnly={handleTranscriptOnly}
+            />
+
+            <div className="flex items-center gap-4 my-10">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Manual Entry Protocol</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+
+            {/* SOS TYPE */}
+            <div className="mb-10">
+              <label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] block mb-4">{t.helpLabel}</label>
+              <div className="grid grid-cols-3 gap-4">
+                {SOS_TYPES.map((st) => (
+                  <button
+                    key={st.type}
+                    onClick={() => setSosType(st.type)}
+                    className={`py-8 rounded-2xl border-2 font-black text-sm transition-all flex flex-col items-center gap-3 ${st.color} ${sosType === st.type ? `scale-[1.02] shadow-md ${st.active}` : 'bg-white hover:bg-slate-50'
+                      }`}
+                  >
+                    <span className="text-3xl font-mono tracking-tighter">{st.icon}</span>
+                    <span className="text-[10px] leading-tight text-center font-black uppercase tracking-tighter">{t[st.key]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* DESCRIPTION */}
+            <div className="mb-10">
+              <label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] block mb-4">{t.briefLabel}</label>
+              <textarea
+                rows={4} value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t.placeholder}
+                className="w-full bg-slate-50 border border-slate-200 focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400 text-slate-900 rounded-2xl px-6 py-5 resize-none outline-none transition-all placeholder:text-slate-400 font-mono text-sm shadow-inner"
+              />
+            </div>
+
+            {/* GPS */}
+            <div className="mb-10 flex flex-col gap-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 flex items-center justify-between shadow-inner">
+                <div className="flex items-center gap-4">
+                  {gpsStatus === 'detecting' && <><span className="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse shadow-sm" /><span className="text-slate-700 text-sm font-black uppercase tracking-widest">{t.detecting}</span></>}
+                  {gpsStatus === 'detected' && <><span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-sm" /><span className="text-emerald-700 text-sm font-black uppercase tracking-widest">{t.locked}: {gps?.lat.toFixed(4)}, {gps?.lng.toFixed(4)}</span></>}
+                  {gpsStatus === 'error' && <><span className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm" /><span className="text-red-700 text-sm font-black uppercase tracking-widest">{t.gpsError}</span></>}
+                  {gpsStatus === 'idle' && <><span className="w-2.5 h-2.5 bg-slate-300 rounded-full" /><span className="text-slate-500 text-sm font-black uppercase tracking-widest">{t.waiting}</span></>}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setGpsStatus('detecting');
+                    detectGPS()
+                      .then((coords) => { setGps(coords); setGpsStatus('detected'); })
+                      .catch(() => setGpsStatus('error'));
+                  }}
+                  className="text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] hover:text-blue-700 transition-colors"
+                >
+                  {t.refresh}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium px-2 uppercase tracking-widest">{t.gpsNote}</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col h-full">
+            {/* NEARBY SERVICES (Pre-submit advice) */}
+            {gpsStatus === 'detected' && <NearbyServices lat={gps?.lat} lng={gps?.lng} />}
+
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-bold px-6 py-5 rounded-r-2xl mb-8 flex gap-3 shadow-inner tracking-wide">
+                <span className="font-black text-red-600">ERROR:</span> {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleSOS} disabled={loading}
+              className={`sos-pulse w-full disabled:opacity-50 text-white font-black tracking-[0.2em] text-xl py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] mt-8 ${
+                mounted && isOnline ? 'bg-red-600 hover:bg-red-700 shadow-[0_10px_30px_rgba(239,68,68,0.3)]' : 'bg-amber-600 hover:bg-amber-700 shadow-[0_10px_30px_rgba(217,119,6,0.3)]'
+              }`}
             >
-               {t.refresh}
+              {loading ? t.transmitting : (mounted && isOnline ? t.btnSendSOS : t.btnQueue)}
             </button>
+
+            <div className="mt-8">
+              <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
+            </div>
           </div>
-          <p className="text-[10px] text-slate-400 font-medium px-2 italic">{t.gpsNote}</p>
         </div>
       </div>
-
-      <div className="flex flex-col h-full">
-        {/* NEARBY SERVICES (Pre-submit advice) */}
-        {gpsStatus === 'detected' && <NearbyServices lat={gps?.lat} lng={gps?.lng} />}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-5 py-4 rounded-xl mb-6 flex gap-3">
-            <span className="font-black">⚠</span> {error}
-          </div>
-        )}
-
-        <button
-          onClick={handleSOS} disabled={loading}
-          className={`sos-pulse w-full disabled:opacity-50 text-white font-black tracking-widest text-lg py-5 rounded-2xl transition-all shadow-2xl active:scale-[0.98] mt-8 ${
-            isOnline ? 'bg-red-600 hover:bg-red-700 shadow-red-600/30' : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
-          }`}
-        >
-          {loading ? t.transmitting : (isOnline ? t.btnSendSOS : t.btnQueue)}
-        </button>
-
-        <div className="mt-8">
-           <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
-        </div>
-      </div>
-    </div>
-
-    <BluetoothPanel onPacketReceived={(p) => {}} />
-      </div>
+      <BluetoothPanel onPacketReceived={(p) => { }} />
     </div>
   );
 }
+

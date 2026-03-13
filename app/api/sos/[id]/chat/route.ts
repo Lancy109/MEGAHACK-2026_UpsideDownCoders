@@ -3,8 +3,9 @@ import prisma from '@/lib/db';
 
 const PAGE_SIZE = 25;
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(req.url);
     const page  = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || String(PAGE_SIZE), 10);
@@ -12,12 +13,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const [messages, total] = await Promise.all([
       prisma.chatMessage.findMany({
-        where: { sosId: params.id },
+        where: { sosId: id },
         orderBy: { createdAt: 'asc' },
         skip,
         take: limit,
       }),
-      prisma.chatMessage.count({ where: { sosId: params.id } }),
+      prisma.chatMessage.count({ where: { sosId: id } }),
     ]);
 
     return NextResponse.json({
@@ -31,14 +32,15 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { senderId, senderName, senderRole, message, messageType = 'TEXT' } = await req.json();
     if (!message?.trim()) return NextResponse.json({ error: 'Empty message' }, { status: 400 });
 
     const msg = await prisma.chatMessage.create({
       data: {
-        sosId: params.id,
+        sosId: id,
         senderId,
         senderName,
         senderRole,
@@ -46,12 +48,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         messageType,
       },
     });
-
-    // Emit to per-SOS chat room
-    const io = (global as any)._io;
-    if (io) {
-      io.to(`chat_${params.id}`).emit('chat_message', msg);
-    }
 
     return NextResponse.json(msg, { status: 201 });
   } catch (err: any) {

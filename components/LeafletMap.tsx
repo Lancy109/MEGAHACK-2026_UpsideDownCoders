@@ -61,6 +61,20 @@ export default function LeafletMap({ sosList = [], zoom = 7, center, userLocatio
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle container resizes (solves partial grey tile rendering when sidebar toggles)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !divRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    
+    observer.observe(divRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
   // Sync User Location Marker
   useEffect(() => {
     const map = mapRef.current;
@@ -145,11 +159,11 @@ export default function LeafletMap({ sosList = [], zoom = 7, center, userLocatio
           <strong style="color:${color};font-size:14px;text-transform:uppercase;letter-spacing:0.05em">${sos.type}</strong>
           <div style="height:1px;background:#e2e8f0;margin:8px 0"></div>
           <p style="font-size:12px;margin:0 0 8px;line-height:1.4;font-weight:500">${sos.description || ''}</p>
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#64748b;font-weight:700">
-             <span>👤</span> ${sos.user?.name || 'Unknown'}
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:900">
+             <span>VICTIM:</span> <span style="color:#0f172a">${sos.user?.name || 'Unknown'}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;margin-top:4px">
-             <span>⏳</span> ${sos.status}
+          <div style="display:flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-top:4px;font-weight:900">
+             <span>STATUS:</span> <span style="color:#0f172a">${sos.status}</span>
           </div>
         </div>
       `, { className: 'leaflet-custom-popup' });

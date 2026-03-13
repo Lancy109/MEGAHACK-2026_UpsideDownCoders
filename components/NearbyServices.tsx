@@ -26,58 +26,59 @@ export default function NearbyServices({ lat, lng }: { lat?: number; lng?: numbe
   if (!lat || !lng) return null;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 mt-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-y-2 mb-6 border-b border-slate-800 pb-4">
-        <h3 className="text-white font-black text-sm uppercase tracking-tighter flex items-center gap-3">
-           <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+    <div className="bg-white border-2 border-slate-100 rounded-[2rem] p-8 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-y-4 mb-8 border-b-2 border-slate-100 pb-4">
+        <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest flex items-center gap-3">
+           <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
            Nearby Emergency Units
         </h3>
-        <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-           <span>RADIUS: <span className="text-blue-400">10KM</span></span>
-           <span>LOC: <span className="text-white font-mono">{lat.toFixed(3)},{lng.toFixed(3)}</span></span>
+        <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+           <span>RADIUS <span className="text-blue-600">10KM</span></span>
+           <span className="w-px h-3 bg-slate-300" />
+           <span>LOC <span className="text-slate-900 font-mono tracking-tight">{lat.toFixed(3)}, {lng.toFixed(3)}</span></span>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-1 no-scrollbar">
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 custom-scrollbar">
         {SERVICE_TYPES.map(s => (
           <button key={s.type} onClick={() => setActiveType(s.type)}
-            className={`flex-shrink-0 px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
+            className={`flex-shrink-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${
               activeType === s.type
-                ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                : 'bg-slate-800 border-transparent text-slate-400 hover:border-slate-600'
+                ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
+                : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'
             }`}>
-            <span className="text-[9px] opacity-60 mr-1.5">{s.icon}</span> <span>{s.label}</span>
+            <span className="opacity-70 mr-2">{s.icon}</span> <span>{s.label}</span>
           </button>
         ))}
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {[1,2,3].map(i => (
-            <div key={i} className="bg-slate-800/50 rounded-2xl h-24 animate-pulse border border-white/5" />
+            <div key={i} className="bg-slate-50 rounded-2xl h-24 animate-pulse border border-slate-200" />
           ))}
         </div>
       ) : places.length === 0 ? (
-        <div className="bg-black/20 rounded-2xl py-12 flex flex-col items-center justify-center border border-dashed border-slate-800">
-           <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">No vetted facilities found nearby</p>
+        <div className="bg-slate-50 rounded-[2rem] py-16 flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
+           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">No vetted facilities found nearby</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-4">
           {places.map(p => (
-            <div key={p.id} className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between transition-all hover:bg-slate-800/60 group">
+            <div key={p.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between transition-all hover:bg-white hover:shadow-md group gap-4">
               <div className="flex-1 pr-4">
-                <div className="flex items-center gap-2 mb-1">
-                   <p className="text-white text-sm font-black leading-tight">{p.name}</p>
-                   {p.isOpen && <span className="bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase px-2 py-0.5 rounded-full border border-emerald-500/20">Open Now</span>}
+                <div className="flex items-center gap-3 mb-2">
+                   <p className="text-slate-900 text-base font-black leading-tight">{p.name}</p>
+                   {p.isOpen && <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-2.5 py-1 rounded-md border border-emerald-200">Open Now</span>}
                 </div>
-                <p className="text-slate-500 text-xs font-medium line-clamp-1">{p.address || 'Location data unavailable'}</p>
+                <p className="text-slate-500 text-xs font-bold line-clamp-1">{p.address || 'Location data unavailable'}</p>
                 <div className="flex items-center gap-4 mt-3">
-                  <span className="text-blue-300 text-[10px] font-black font-mono tracking-widest py-1 px-2 border border-blue-400/30 bg-blue-900/40 rounded">{p.distance.toFixed(1)} KM</span>
-                  {p.rating && <span className="text-yellow-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">RATING: {p.rating}/5</span>}
+                  <span className="text-blue-700 text-[10px] font-black font-mono tracking-widest py-1 px-2.5 border border-blue-200 bg-blue-50 rounded-md">{p.distance.toFixed(1)} KM</span>
+                  {p.rating && <span className="text-amber-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">RATING: {p.rating}/5</span>}
                 </div>
               </div>
               <a href={getDirectionsURL(p.lat, p.lng)} target="_blank" rel="noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-5 py-3 rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-900/20 group-hover:scale-105">
+                className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 py-4 rounded-xl transition-all active:scale-95 shadow-md shadow-slate-900/10 text-center w-full md:w-auto">
                 Directions
               </a>
             </div>

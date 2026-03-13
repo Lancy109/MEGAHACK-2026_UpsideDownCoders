@@ -101,7 +101,7 @@ export default function PanicPage() {
 
           <div className="relative flex items-center justify-center">
             {/* Progress ring */}
-            <svg className="absolute" width="240" height="240" viewBox="0 0 200 200">
+            <svg className="absolute pointer-events-none" width="240" height="240" viewBox="0 0 200 200">
               <circle cx="100" cy="100" r="90" fill="none" stroke="#1f2937" strokeWidth="8" />
               <circle
                 cx="100" cy="100" r="90" fill="none"
@@ -119,7 +119,7 @@ export default function PanicPage() {
               onMouseLeave={cancelHold}
               onTouchStart={startHold}
               onTouchEnd={cancelHold}
-              className="w-44 h-44 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-black text-3xl shadow-[0_0_50px_rgba(239,68,68,0.3)] transition-all select-none flex flex-col items-center justify-center gap-2"
+              className="relative z-10 w-44 h-44 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white font-black text-3xl shadow-[0_0_50px_rgba(239,68,68,0.3)] transition-all select-none flex flex-col items-center justify-center gap-2"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <div className="w-4 h-4 rounded-full bg-white mb-1 shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
