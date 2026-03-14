@@ -26,7 +26,8 @@ export function useChat(sosId: string, currentUserId: string) {
   const [cursor, setCursor]           = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
-  const [connStatus, setConnStatus]   = useState<string>('connecting');
+  const [supabaseStatus, setSupabaseStatus] = useState<string>('connecting');
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -120,8 +121,14 @@ export function useChat(sosId: string, currentUserId: string) {
     console.log('[useChat] Socket joining room:', `chat_${sosId}`);
     socket.emit('join_chat', sosId);
 
-    const handleConnect = () => console.log('[useChat] Socket connected:', socket.id);
-    const handleDisconnect = () => console.log('[useChat] Socket disconnected');
+    const handleConnect = () => {
+      console.log('[useChat] Socket connected:', socket.id);
+      setSocketConnected(true);
+    };
+    const handleDisconnect = () => {
+      console.log('[useChat] Socket disconnected');
+      setSocketConnected(false);
+    };
 
     const handleMessage = (msg: ChatMessage) => {
       console.log('[useChat] Socket message received:', msg.id, 'for SOS:', msg.sosId);
@@ -170,7 +177,7 @@ export function useChat(sosId: string, currentUserId: string) {
   // ── LAYER 2: Supabase Realtime broadcast (fallback) ──────────────────────────
   useEffect(() => {
     if (!sosId || !supabase) {
-      setConnStatus('unconfigured');
+      setSupabaseStatus('unconfigured');
       return;
     }
 
@@ -189,7 +196,7 @@ export function useChat(sosId: string, currentUserId: string) {
           setTypingUsers(prev => { const n = { ...prev }; delete n[payload.userId]; return n; });
         }, 3000);
       })
-      .subscribe((status: string) => setConnStatus(status));
+      .subscribe((status: string) => setSupabaseStatus(status));
 
     channelRef.current = channel;
 
@@ -340,7 +347,8 @@ export function useChat(sosId: string, currentUserId: string) {
     hasMore,
     loadingMore,
     typingUsers,
-    connStatus,
+    supabaseStatus,
+    socketConnected,
     unreadCount,
     loadEarlier,
     sendMessage,

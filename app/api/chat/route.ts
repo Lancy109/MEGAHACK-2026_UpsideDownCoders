@@ -30,11 +30,19 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const { sosId, senderId, senderName, senderRole, message, messageType = 'TEXT' } = await req.json();
-    console.log(`[API Chat] Creating message for SOS ${sosId} from ${senderName}`);
-
-    if (!sosId || !senderId || !senderName || !senderRole || !message?.trim()) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+    
+    // DEBUG LOGS
+    const models = Object.keys(prisma).filter(k => !k.startsWith('_') && !k.startsWith('$'));
+    console.log('[API Chat] Available Prisma models:', models);
+    if (!prisma.chatMessage) {
+      console.error('[API Chat] chatMessage model is MISSING from Prisma client!');
+      // Check if it's under ChatMessage (PascalCase) just in case
+      if ((prisma as any).ChatMessage) {
+        console.log('[API Chat] Found ChatMessage (PascalCase) instead of chatMessage!');
+      }
     }
+
+    console.log(`[API Chat] Creating message for SOS ${sosId} from ${senderName}`);
 
     const msg = await prisma.chatMessage.create({
       data: {
