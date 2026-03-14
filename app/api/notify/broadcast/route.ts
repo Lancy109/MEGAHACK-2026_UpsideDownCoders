@@ -54,10 +54,6 @@ export async function POST(req: Request) {
 
     console.log(`[Broadcast API] Execution: unique_recipients=${sentCount}, Initial array length: ${users.length}, IDs:`, uniqueUsers.map(u=>u.id));
     
-    // writing it to a file so agent can read.
-    require('fs').appendFileSync('C:\\Users\\parth\\Downloads\\MEGAHACK-2026_UpsideDownCoders-main\\MEGAHACK-2026_UpsideDownCoders-main\\api_debug.log', `[${new Date().toISOString()}] Target=${target}, FetchedUsers=${users?.length}, SentCount=${sentCount}\n`);
-
-
     // PERSIST MESSAGE TO DATABASE
     let userIdsStr = null;
     if (target !== 'ALL' && target !== 'GLOBAL') {

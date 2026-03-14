@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSocket } from '@/hooks/useSocket';
+import { supabase } from '@/lib/supabase';
 
 export interface ChatMessage {
   id: string;
@@ -22,37 +22,55 @@ export function useChat(sosId: string, currentUserId: string) {
 
   const addMessages = useCallback((incoming: ChatMessage[]) => {
     setMessages(prev => {
+      // Create a map to filter out duplicates instantly
       const map = new Map(prev.map(m => [m.id, m]));
-      incoming.forEach(m => { if (!map.has(m.id)) map.set(m.id, m); });
+      let newArrivals = false;
+
+      incoming.forEach(m => { 
+        if (!map.has(m.id)) {
+          map.set(m.id, m); 
+          loadedIds.current.add(m.id);
+          newArrivals = true;
+        }
+      });
+
+      if (!newArrivals) return prev; // No changes, keep reference same
+
       return Array.from(map.values()).sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     });
-    incoming.forEach(m => loadedIds.current.add(m.id));
   }, []);
 
-  const socket = useSocket({
-    chat_message: (msg: ChatMessage) => {
-      console.log('[ChatHook] Message received:', msg);
-      if (msg.sosId === sosId) addMessages([msg]);
-    },
-    typing_start: ({ userId, name }: { userId: string; name: string }) => {
-      console.log('[ChatHook] Typing start:', name);
-      if (userId !== currentUserId) {
-        setTypingUsers(prev => ({ ...prev, [userId]: name }));
-      }
-    },
-    typing_stop: ({ userId }: { userId: string }) => {
-      setTypingUsers(prev => { const n = { ...prev }; delete n[userId]; return n; });
-    },
-  });
-
-  // Join chat room on mount
+  // Supabase Realtime Subscription
   useEffect(() => {
-    if (!socket || !sosId) return;
-    socket.emit('join_chat', sosId);
-    return () => { socket.emit('leave_chat', sosId); };
-  }, [socket, sosId]);
+    if (!sosId || !supabase) return;
+
+    console.log(`[Supabase] Subscribing to ChatMessage for SOS: ${sosId}`);
+
+    const channel = supabase
+      .channel(`chat_${sosId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ChatMessage',
+          filter: `sosId=eq.${sosId}`
+        },
+        (payload: { new: ChatMessage }) => {
+          console.log('[Supabase] Realtime message received:', payload.new);
+          addMessages([payload.new as ChatMessage]);
+        }
+      )
+      .subscribe((status: string) => {
+        console.log(`[Supabase] Subscription status: ${status}`);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sosId, addMessages]);
 
   // Fetch latest page on mount
   useEffect(() => {
@@ -86,29 +104,32 @@ export function useChat(sosId: string, currentUserId: string) {
     messageType = 'TEXT'
   ) => {
     if (!message.trim()) return;
+    
     const res = await fetch(`/api/sos/${sosId}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ senderId: currentUserId, senderName, senderRole, message, messageType }),
+      body: JSON.stringify({ 
+        senderId: currentUserId, 
+        senderName, 
+        senderRole, 
+        message, 
+        messageType 
+      }),
     });
     const data = await res.json();
     
-    // Add locally instantly for this user
+    // Add locally instantly to ensure responsive UI
     if (!data.error) {
       addMessages([data]);
-      if (socket) {
-        // Emit for other users in the room
-        socket.emit('broadcast_message', data);
-      }
     }
     
     return data;
-  }, [sosId, currentUserId, socket, addMessages]);
+  }, [sosId, currentUserId, addMessages]);
 
+  // Legacy typing placeholder - Supabase Realtime Broadcast can handle this too if needed
   const emitTyping = useCallback((isTyping: boolean, name: string) => {
-    if (!socket) return;
-    socket.emit(isTyping ? 'typing_start' : 'typing_stop', { sosId, userId: currentUserId, name });
-  }, [socket, sosId, currentUserId]);
+    // For now we prioritize basic chat delivery
+  }, []);
 
   return { messages, hasMore, typingUsers, loadEarlier, sendMessage, emitTyping };
 }
