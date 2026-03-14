@@ -39,6 +39,11 @@ export async function POST(req: Request) {
     ]);
     emitTaskUpdate({ sosId, status: 'ASSIGNED', volunteerId, taskId: task.id });
 
+    // Auto-log event to incident timeline
+    await prisma.sosEvent.create({
+      data: { sosId, event: 'MISSION_ACCEPTED', actor: volunteerId, actorName: volunteerName },
+    });
+
     // Send SYSTEM message to the chat room
     const systemMsg = await prisma.chatMessage.create({
       data: {
@@ -51,7 +56,10 @@ export async function POST(req: Request) {
       },
     });
     const io = (global as any)._io;
-    if (io) io.to(`chat_${sosId}`).emit('chat_message', systemMsg);
+    if (io) {
+      io.to(`chat_${sosId}`).emit('chat_message', systemMsg);
+      io.emit('sos_event', { sosId, event: 'MISSION_ACCEPTED', actorName: volunteerName });
+    }
 
     return NextResponse.json(task, { status: 201 });
   } catch (err: any) {

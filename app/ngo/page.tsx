@@ -276,14 +276,32 @@ export default function NGOCommandCenter() {
 
   const sendBroadcast = async () => {
     if (!broadcastMsg.trim()) return;
-    const res = await fetch('/api/notify/broadcast', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: broadcastMsg, target: broadcastTarget }),
-    });
-    const data = await res.json();
-    setBroadcastResult(`Broadcast sent to ${data.sentCount || 0} recipients.`);
-    setBroadcastMsg('');
+    if (broadcastTarget === 'SELECTED_ALERTS' && bulkSelected.size === 0) {
+      alert('Please select at least one alert from the table first.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/notify/broadcast', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: broadcastMsg, 
+          target: broadcastTarget,
+          alertIds: broadcastTarget === 'SELECTED_ALERTS' ? Array.from(bulkSelected) : []
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send broadcast');
+      }
+      setBroadcastResult(`Broadcast sent to ${data.sentCount || 0} recipients.`);
+      setBroadcastMsg('');
+    } catch (err: any) {
+      console.error(err);
+      setBroadcastResult(`API Error: ${err.message}`);
+    }
   };
+
 
   const exportCSV = (rows: SOS[]) => {
     const hdr = 'ID,Type,Victim,Description,Status,Lat,Lng,Created\n';
@@ -455,7 +473,7 @@ export default function NGOCommandCenter() {
               { id: 'resources', label: 'Resources' },
               { id: 'volunteers', label: 'Volunteers' },
               { id: 'escalation', label: `Escalation${unhandledEscalations > 0 ? ` (${unhandledEscalations})` : ''}` },
-              { id: 'comms', label: 'Communication' },
+              { id: 'disaster_alert', label: 'Disaster Alert Broadcast' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 ${
@@ -708,32 +726,71 @@ export default function NGOCommandCenter() {
             </div>
           )}
 
-          {/* ── COMMUNICATION TAB ── */}
-          {activeTab === 'comms' && (
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Broadcast SMS */}
-              <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 border-b border-slate-100 pb-2">Broadcast Notification</p>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Send To</p>
-                  <select value={broadcastTarget} onChange={e => setBroadcastTarget(e.target.value)}
-                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white outline-none focus:border-blue-400">
-                    <option value="ALL">All Users</option>
-                    <option value="VOLUNTEERS">All Volunteers</option>
-                    <option value="VICTIMS">Victims with Active SOS</option>
-                  </select>
+          {/* ── DISASTER ALERT BROADCAST TAB ── */}
+          {activeTab === 'disaster_alert' && (
+            <div className="p-5 grid grid-cols-1 gap-6">
+              <div className="bg-red-50/50 border border-red-200 rounded-3xl p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-red-100">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 animate-pulse">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582c.586.235.953.79.953 1.415V15a1 1 0 01-1 1H5a1 1 0 01-1-1V7.32c0-.625.367-1.18.953-1.415L9 4.323V3a1 1 0 011-1zm-6 8h12v4H4v-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black uppercase text-red-700 tracking-widest">Disaster Alert Broadcast System</h2>
+                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">URGENT PUSH NOTIFICATION NETWORK</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Message</p>
-                  <textarea value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)} rows={4}
-                    placeholder="Type your broadcast message here..." className="w-full text-sm border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:border-blue-400 resize-none" />
-                </div>
-                <button onClick={sendBroadcast} disabled={!broadcastMsg.trim()} className="w-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all">
-                  Send Broadcast
-                </button>
-                {broadcastResult && <p className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">{broadcastResult}</p>}
-              </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="bg-white/50 border border-red-100 rounded-xl p-4">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Target Audience</p>
+                      <p className="text-sm font-black text-red-600">All Registered Users (Global Broadcast)</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Alert Message</p>
+                      <textarea value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)} rows={5}
+                        placeholder="Enter the critical alert details. This will be broadcasted to the notification panels of all registered users immediately." 
+                        className="w-full text-sm font-medium border-2 border-slate-200 rounded-2xl px-4 py-3 bg-white outline-none focus:border-red-400 focus:bg-red-50/10 resize-none transition-colors" />
+                    </div>
+                    <button 
+                      onClick={sendBroadcast} 
+                      disabled={!broadcastMsg.trim()} 
+                      className="w-full text-xs font-black uppercase tracking-widest bg-red-600 text-white py-4 rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:hover:bg-red-600 transition-all shadow-[0_4px_12px_rgba(220,38,38,0.3)] hover:shadow-[0_6px_16px_rgba(220,38,38,0.5)] active:scale-[0.98]"
+                    >
+                      Post Alert
+                    </button>
+                    {broadcastResult && (
+                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-xl animate-fade-in">
+                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold shrink-0">✓</div>
+                        <p className="text-xs font-bold text-emerald-700">{broadcastResult}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="hidden md:flex flex-col justify-center bg-white rounded-2xl p-6 border border-slate-200">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-100 pb-2">Broadcast Protocol</p>
+                    <ul className="space-y-4 text-xs font-medium text-slate-600">
+                      <li className="flex gap-3">
+                        <span className="text-blue-500 font-black">1.</span>
+                        Draft a clear, concise alert message. All registered users will receive this instantly.
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-blue-500 font-black">2.</span>
+                        Click <b>Post Alert</b> to initiate the global transmission.
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-blue-500 font-black">3.</span>
+                        Verify delivery in your own Notification Panel (Bell icon).
+                      </li>
+                      <li className="flex gap-3 mt-4 text-red-600 font-bold bg-red-50 p-3 rounded-xl">
+                        🚨 Warning: Global broadcasts trigger urgent signals to all active devices and cannot be retracted.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

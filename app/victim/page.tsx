@@ -8,6 +8,7 @@ import LiveChat from '@/components/LiveChat';
 import EmergencyChatbot from '@/components/EmergencyChatbot';
 import NearbyServices from '@/components/NearbyServices';
 import VoiceSOS from '@/components/VoiceSOS';
+import StatusTimeline from '@/components/StatusTimeline';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSyncEngine } from '@/hooks/useSyncEngine';
 import { enqueueSOSPacket } from '@/lib/offlineDB';
@@ -123,17 +124,7 @@ export default function VictimPage() {
 
   useSocket({
     broadcast_receive: (data: any) => {
-      if (data.target === 'ALL' || data.target === 'VICTIMS') {
-        setBroadcast(data);
-        try {
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.frequency.value = 660; gain.gain.value = 0.1;
-          osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 300);
-        } catch {}
-      }
+      // Handled globally in GlobalToasts
     },
     sos_update: (updatedSOS: any) => {
       if (updatedSOS.id === submittedSosId) {
@@ -326,6 +317,15 @@ export default function VictimPage() {
                   />
                 </div>
               )}
+
+              {submittedSosId && !offlineSaved && (
+                <StatusTimeline
+                  sosId={submittedSosId}
+                  currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'victim_fallback'}
+                  currentUserName={user?.fullName || 'Victim'}
+                  showStatusButtons={true}
+                />
+              )}
               
               <button
                 onClick={() => { setSubmitted(false); setSosType(null); setDescription(''); setOfflineSaved(false); }}
@@ -482,17 +482,7 @@ export default function VictimPage() {
           </div>
         </div>
       </div>
-      {/* BROADCAST NOTIFICATION */}
-      {broadcast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1000] w-[calc(100%-48px)] max-w-lg bg-red-900/95 backdrop-blur-md text-white rounded-3xl p-6 shadow-2xl border border-white/10 slide-in">
-           <div className="flex items-center gap-3 mb-3">
-              <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400">Official Safety Broadcast</p>
-           </div>
-           <p className="text-sm font-black italic mb-6">"{broadcast.message}"</p>
-           <button onClick={() => setBroadcast(null)} className="w-full bg-white text-red-900 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-slate-200 transition-all">ACKNOWLEDGE</button>
-        </div>
-      )}
+      {/* BROADCAST NOTIFICATION REMOVED - NOW GLOBAL */}
     </div>
   );
 }

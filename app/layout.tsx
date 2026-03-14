@@ -4,8 +4,9 @@ import '@/src/app/globals.css';
 import Navbar from '@/components/Navbar';
 import PWARegistration from '@/components/PWARegistration';
 import OfflineBanner from '@/components/OfflineBanner';
-
 import UserSync from '@/components/UserSync';
+import AlertBanner from '@/components/AlertBanner';
+import GlobalToasts from '@/components/GlobalToasts';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -42,6 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PWARegistration />
           <Navbar />
           <OfflineBanner />
+          <AlertBanner />
+          <GlobalToasts />
           <main>{children}</main>
         </body>
       </html>

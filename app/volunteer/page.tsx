@@ -125,30 +125,10 @@ export default function VolunteerPage() {
       setSosList((prev) => prev.filter((s) => s.id !== sosId));
     },
     broadcast_receive: (data: any) => {
-      if (data.target === 'ALL' || data.target === 'VOLUNTEERS') {
-        setBroadcast(data);
-        // Play notification sound
-        try {
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.frequency.value = 660; gain.gain.value = 0.1;
-          osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 300);
-        } catch {}
-      }
+      // Handled globally in GlobalToasts
     },
     escalation_alert: (data: any) => {
-      setEscalations(prev => [data, ...prev]);
-      // Urgent notification sound
-      try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = 880; gain.gain.value = 0.2;
-        osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 700);
-      } catch {}
+      // Handled globally in GlobalToasts
     }
   });
 
@@ -373,37 +353,7 @@ export default function VolunteerPage() {
         </div>
       )}
 
-      {/* BROADCAST NOTIFICATION */}
-      {broadcast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1500] w-[calc(100%-48px)] max-w-lg bg-slate-900 text-white rounded-3xl p-6 shadow-2xl border border-white/10 slide-in">
-           <div className="flex items-center gap-3 mb-3">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Strategic Broadcast</p>
-           </div>
-           <p className="text-sm font-black italic mb-6">"{broadcast.message}"</p>
-           <button onClick={() => setBroadcast(null)} className="w-full bg-white text-slate-900 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-slate-200 transition-all">ACKNOWLEDGE</button>
-        </div>
-      )}
-
-      {/* ESCALATION TOASTS */}
-      <div className="fixed bottom-6 left-6 z-[1600] flex flex-col gap-3 max-w-sm w-full">
-         {escalations.slice(0, 3).map((e, i) => (
-           <div key={i} className="bg-red-600 text-white p-5 rounded-2xl shadow-2xl border border-red-500 flex flex-col gap-3 animate-bounce-subtle">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2.5 py-1 rounded-md">UNATTENDED EMERGENCY</span>
-                <button onClick={() => setEscalations(prev => prev.filter((_, j) => i !== j))} className="text-white/60 hover:text-white">✕</button>
-              </div>
-              <p className="text-xs font-black leading-tight">Priority Escalation: {e.type} at {e.lat.toFixed(2)}, {e.lng.toFixed(2)}</p>
-              <p className="text-[10px] font-medium opacity-80 italic">Waiting {e.minutesWaiting}+ mins. Immediate response required.</p>
-              <button 
-                onClick={() => { handleAccept(e.sosId); setEscalations(prev => prev.filter((_, j) => i !== j)); }}
-                className="bg-white text-red-600 text-[10px] font-black uppercase tracking-widest py-2 rounded-lg hover:bg-slate-100 transition-all"
-              >
-                ACCEPT MISSION NOW
-              </button>
-           </div>
-         ))}
-      </div>
+      {/* BROADCAST NOTIFICATION REMOVED - NOW GLOBAL */}
 
       <button 
         onClick={() => setShowMap(!showMap)}

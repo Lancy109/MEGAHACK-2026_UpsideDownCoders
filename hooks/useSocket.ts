@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 let globalSocket: Socket | null = null;
@@ -13,6 +13,7 @@ type EventMap = Record<string, (...args: any[]) => void>;
  */
 export function useSocket(events: EventMap = {}) {
   const eventsRef = useRef(events);
+  const [socketInstance, setSocketInstance] = useState<Socket | null>(globalSocket);
   
   // Always keep the latest events in Ref to avoid stale closures
   useEffect(() => {
@@ -24,10 +25,14 @@ export function useSocket(events: EventMap = {}) {
       globalSocket = io(window.location.origin, {
         transports: ['websocket', 'polling'],
       });
+      setSocketInstance(globalSocket);
+    } else if (!socketInstance) {
+      setSocketInstance(globalSocket);
     }
 
     const socket = globalSocket;
     const activeHandlers: Record<string, (...args: any[]) => void> = {};
+
 
     // Register relay handlers for each event
     Object.keys(eventsRef.current).forEach((event) => {
@@ -48,5 +53,5 @@ export function useSocket(events: EventMap = {}) {
     };
   }, []);
 
-  return globalSocket;
+  return socketInstance;
 }

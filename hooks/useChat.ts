@@ -33,9 +33,11 @@ export function useChat(sosId: string, currentUserId: string) {
 
   const socket = useSocket({
     chat_message: (msg: ChatMessage) => {
+      console.log('[ChatHook] Message received:', msg);
       if (msg.sosId === sosId) addMessages([msg]);
     },
     typing_start: ({ userId, name }: { userId: string; name: string }) => {
+      console.log('[ChatHook] Typing start:', name);
       if (userId !== currentUserId) {
         setTypingUsers(prev => ({ ...prev, [userId]: name }));
       }

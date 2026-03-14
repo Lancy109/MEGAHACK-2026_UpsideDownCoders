@@ -11,25 +11,22 @@ export default function UserSync() {
     if (isLoaded && user && !syncedRef.current) {
       const role = user.publicMetadata?.role as string;
       
-      // We sync whenever a user lands on any page while logged in 
-      // but we prioritize Volunteers and Victims for the NGO dashboard
-      if (role === 'VOLUNTEER' || role === 'VICTIM' || role === 'NGO') {
-        fetch('/api/users/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: user.id,
-            name: user.fullName || user.username || 'User',
-            email: user.primaryEmailAddress?.emailAddress || '',
-            phone: user.primaryPhoneNumber?.phoneNumber || 'N/A',
-            role: role
-          })
-        }).then(() => {
-          syncedRef.current = true;
-        }).catch(err => {
-          console.error('Failed to sync user:', err);
-        });
-      }
+      // Sync EVERY logged-in user to the DB to ensure they can receive broadcasts
+      fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          name: user.fullName || user.username || 'User',
+          email: user.primaryEmailAddress?.emailAddress || '',
+          phone: user.primaryPhoneNumber?.phoneNumber || 'N/A',
+          role: role || 'VICTIM'
+        })
+      }).then(() => {
+        syncedRef.current = true;
+      }).catch(err => {
+        console.error('Failed to sync user:', err);
+      });
     }
   }, [isLoaded, user]);
 

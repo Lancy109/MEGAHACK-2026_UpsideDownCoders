@@ -11,7 +11,13 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'connection_limit=2'
+    }
+  }
+});
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
@@ -35,9 +41,11 @@ app.prepare().then(() => {
 
     // Per-SOS live chat rooms
     socket.on('join_chat', (sosId) => {
+      console.log(`[Socket] Client ${socket.id} joining room chat_${sosId}`);
       socket.join(`chat_${sosId}`);
     });
     socket.on('leave_chat', (sosId) => {
+      console.log(`[Socket] Client ${socket.id} leaving room chat_${sosId}`);
       socket.leave(`chat_${sosId}`);
     });
 
@@ -51,6 +59,7 @@ app.prepare().then(() => {
 
     // Relay messages (workaround for API route isolation)
     socket.on('broadcast_message', (msg) => {
+      console.log(`[Socket] Relaying chat msg from ${msg.senderName} to room chat_${msg.sosId}`);
       socket.to(`chat_${msg.sosId}`).emit('chat_message', msg);
     });
 

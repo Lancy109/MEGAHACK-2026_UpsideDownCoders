@@ -109,3 +109,60 @@ model ChatMessage {
   messageType String   @default("TEXT")
   createdAt   DateTime @default(now())
 }
+
+// ─── Feature Suite ───────────────────────────────────
+
+model MapResource {
+  id         String   @id @default(cuid())
+  type       String   // WATER | FOOD | MEDICAL | SHELTER | POWER
+  lat        Float
+  lng        Float
+  capacity   Int      @default(0)
+  notes      String?
+  reporterId String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model MissingPerson {
+  id          String   @id @default(cuid())
+  name        String
+  age         Int?
+  lastSeen    String
+  description String
+  photoUrl    String?
+  status      String   @default("MISSING")  // MISSING | FOUND
+  reporterId  String
+  foundBy     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DisasterAlert {
+  id         String   @id @default(cuid())
+  message    String
+  severity   String   @default("MEDIUM")  // LOW | MEDIUM | HIGH | CRITICAL
+  source     String   @default("NGO")
+  area       String?
+  isActive   Boolean  @default(true)
+  createdBy  String
+  createdAt  DateTime @default(now())
+}
+
+model SosEvent {
+  id        String   @id @default(cuid())
+  sosId     String
+  event     String   // SOS_CREATED | PACKET_RELAYED | VOLUNTEER_DETECTED | MISSION_ACCEPTED | STATUS_UPDATE | RESCUE_COMPLETED
+  actor     String?  // userId or 'system'
+  actorName String?
+  metadata  String?  // JSON stringified extra data
+  createdAt DateTime @default(now())
+}
+
+model BroadcastMessage {
+  id        String   @id @default(cuid())
+  message   String
+  target    String
+  userIds   String?  // JSON stringified array of specific user IDs if targeted globally
+  createdAt DateTime @default(now())
+}
