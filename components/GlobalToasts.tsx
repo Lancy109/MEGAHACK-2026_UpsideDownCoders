@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { useUser } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useAlerts } from '@/hooks/useAlerts';
 
 const SEVERITY = {
   CRITICAL: { bg: 'bg-red-600', border: 'border-red-500', text: 'text-red-600', label: 'CRITICAL EMERGENCY', lightBg: 'bg-red-50' },
@@ -28,6 +29,79 @@ export default function GlobalToasts() {
   const { user } = useUser();
   const pathname = usePathname();
   const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const { useAlertRealtime } = require('@/hooks/useAlertRealtime');
+  const { useSosRealtime } = require('@/hooks/useSosRealtime');
+
+  // Handle Global Disaster Alerts
+  useAlertRealtime((newAlert: any) => {
+    const myId = (user?.publicMetadata as any)?.dbId || user?.id;
+    const myRole = (user?.publicMetadata as any)?.role as string | undefined;
+    
+    let shouldShow = false;
+    if (myRole === 'NGO' || pathname?.startsWith('/ngo')) shouldShow = true;
+    else if (newAlert.userIds && Array.isArray(newAlert.userIds)) {
+      if (myId && newAlert.userIds.includes(myId)) shouldShow = true;
+    } else {
+      if (newAlert.target === 'ALL') shouldShow = true;
+      else if (newAlert.target === 'VOLUNTEERS' && myRole === 'VOLUNTEER') shouldShow = true;
+      else if ((newAlert.target.startsWith('VICTIMS')) && (myRole === 'VICTIM' || !myRole)) shouldShow = true;
+    }
+
+    if (shouldShow) {
+      const newToast: Toast = {
+        id: `brd_sb_${Date.now()}`,
+        type: 'BROADCAST',
+        message: newAlert.message,
+        timestamp: Date.now()
+      };
+      setToasts(prev => [...prev, newToast]);
+    }
+  });
+
+  // Handle Realtime SOS updates (for escalations/new alerts)
+  useSosRealtime(() => {
+    // This could trigger a refresh of certain global stats if needed, 
+    // but individual components handle their own data.
+    // For now, we'll let existing socket escalation logic handle toasts,
+    // or we could implement it here by checking the sosList periodically.
+  });
+
+  const { alerts: alertQueue } = useAlerts(5);
+
+  // Sync Supabase Alerts to Toasts
+  useEffect(() => {
+     alertQueue.forEach(alert => {
+        const myId = (user?.publicMetadata as any)?.dbId || user?.id;
+        const myRole = (user?.publicMetadata as any)?.role as string | undefined;
+        
+        let shouldShow = false;
+        // In useAlerts, we already filter/deduplication loosely, but here we apply specific visibility rules
+        if (myRole === 'NGO' || pathname?.startsWith('/ngo')) shouldShow = true;
+        // If it was a targeted broadcast (from the source field)
+        if (alert.source === 'NGO_BROADCAST') {
+           if (alert.area === 'ALL') shouldShow = true;
+           else if (alert.area === 'VOLUNTEERS' && myRole === 'VOLUNTEER') shouldShow = true;
+           else if (alert.area?.startsWith('VICTIMS') && (myRole === 'VICTIM' || !myRole)) shouldShow = true;
+        } else {
+           // Standard DisasterAlert
+           shouldShow = true;
+        }
+
+        if (shouldShow) {
+           const id = `alert_sb_${alert.id}`;
+           setToasts(prev => {
+              if (prev.find(t => t.id === id)) return prev;
+              return [...prev, {
+                 id,
+                 type: 'BROADCAST',
+                 message: alert.message,
+                 timestamp: new Date(alert.createdAt).getTime()
+              }];
+           });
+        }
+     });
+  }, [alertQueue, user, pathname]);
 
   useSocket({
     escalation_alert: (data: any) => {

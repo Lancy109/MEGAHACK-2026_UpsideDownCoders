@@ -156,6 +156,11 @@ export default function VictimPage() {
   const [offlineSaved, setOfflineSaved] = useState(false);
   const [broadcast, setBroadcast] = useState<{message: string} | null>(null);
 
+  const { useTaskRealtime } = require('@/hooks/useTaskRealtime');
+  useTaskRealtime(submittedSosId || '', () => {
+     console.log('[Realtime] Victim Mission Updated');
+  });
+
   const t = TRANSLATIONS[language] || TRANSLATIONS.English;
 
   useEffect(() => {

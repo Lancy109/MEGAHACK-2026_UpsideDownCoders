@@ -45,13 +45,8 @@ export default function StatusTimeline({ sosId, currentUserId, currentUserName, 
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  useSocket({
-    sos_event: (ev: SosEvent) => {
-      if (ev.sosId === sosId) {
-        setEvents(prev => prev.some(e => e.id === ev.id) ? prev : [...prev, ev].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
-      }
-    },
-  });
+  const { useSosEventRealtime } = require('@/hooks/useSosEventRealtime');
+  useSosEventRealtime(sosId, fetchEvents);
 
   const postStatusUpdate = async (status: string) => {
     setPosting(true);

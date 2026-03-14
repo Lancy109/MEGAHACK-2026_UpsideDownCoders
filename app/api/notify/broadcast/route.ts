@@ -67,15 +67,28 @@ export async function POST(req: Request) {
       }
     });
 
+    // ALSO CREATE A DISASTER ALERT RECORD FOR REALTIME TRIGGER
+    await prisma.disasterAlert.create({
+      data: {
+        message: `📢 ${message}`,
+        severity: target === 'ALL' || target === 'GLOBAL' ? 'CRITICAL' : 'HIGH',
+        source: 'NGO_BROADCAST',
+        createdBy: 'SYSTEM_BROADCAST',
+        area: target
+      }
+    });
+
     // If Twilio is configured, send actual SMS
-    console.log(`[Broadcast API] Notification pipeline start. Twilio configured: ${!!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE)}`);
-    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE) {
-      try {
-        const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    try {
+      const { safeGetTwilioClient } = require('@/lib/twilio');
+      const twilioClient = safeGetTwilioClient();
+
+      if (twilioClient) {
+        console.log(`[Broadcast API] Notifying ${uniqueUsers.length} users via Twilio SMS...`);
         for (const user of uniqueUsers as { phone?: string }[]) {
           if (user.phone && user.phone !== 'N/A' && user.phone !== 'No phone provided') {
             try {
-              await twilio.messages.create({
+              await twilioClient.messages.create({
                 body: `[ResQNet Broadcast] ${message}`,
                 from: process.env.TWILIO_PHONE,
                 to: user.phone,
@@ -83,9 +96,11 @@ export async function POST(req: Request) {
             } catch (smsErr) { console.error(`[Broadcast API] Individual SMS fail for ${user.phone}:`, smsErr); }
           }
         }
-      } catch (twilioInitErr) {
-        console.error('[Broadcast API] Twilio Client Init failed (check credentials):', twilioInitErr);
+      } else {
+        console.warn('[Broadcast API] Twilio skipped: No client available (check credentials).');
       }
+    } catch (twilioInitErr) {
+      console.error('[Broadcast API] Twilio Pipeline Error:', twilioInitErr);
     }
 
     // Emit socket event for real-time UI notification

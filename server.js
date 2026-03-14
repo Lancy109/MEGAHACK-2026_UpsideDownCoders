@@ -37,6 +37,7 @@ app.prepare().then(() => {
     // Legacy SOS room (kept for backward compat)
     socket.on('join_sos_room', (sosId) => {
       socket.join(`sos-${sosId}`);
+      console.log(`Socket ${socket.id} joined room sos-${sosId}`);
     });
 
     // Per-SOS live chat rooms
@@ -96,14 +97,20 @@ app.prepare().then(() => {
         });
 
         // Send urgent SMS to NGO (store NGO phones in env)
-        if (process.env.NGO_EMERGENCY_PHONE && process.env.TWILIO_ACCOUNT_SID) {
+        if (process.env.NGO_EMERGENCY_PHONE) {
           try {
-            const twilio = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-            await twilio.messages.create({
-              body: `🚨 URGENT ResQNet: SOS unattended for 10+ mins. Type: ${sos.type}. Victim: ${sos.user.name} ${sos.user.phone}. Location: ${sos.lat},${sos.lng}. Manual intervention needed.`,
-              from: process.env.TWILIO_PHONE,
-              to: process.env.NGO_EMERGENCY_PHONE,
-            });
+            const { safeGetTwilioClient } = require('./lib/twilio');
+            const twilioClient = safeGetTwilioClient();
+            
+            if (twilioClient) {
+              await twilioClient.messages.create({
+                body: `🚨 URGENT ResQNet: SOS unattended for 10+ mins. Type: ${sos.type}. Victim: ${sos.user.name} ${sos.user.phone}. Location: ${sos.lat},${sos.lng}. Manual intervention needed.`,
+                from: process.env.TWILIO_PHONE,
+                to: process.env.NGO_EMERGENCY_PHONE,
+              });
+            } else {
+              console.warn('[Escalation] Twilio not configured or invalid SID. SMS skipped.');
+            }
           } catch (smsErr) {
             console.error('Twilio SMS failed:', smsErr);
           }

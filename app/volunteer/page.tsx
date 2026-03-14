@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useSocket } from '@/hooks/useSocket';
@@ -68,33 +68,34 @@ export default function VolunteerPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  useEffect(() => {
-    const fetchMissions = async () => {
-      const resSOS = await fetch('/api/sos');
-      const dataSOS = await resSOS.json();
-      if (Array.isArray(dataSOS)) setSosList(dataSOS);
+  const fetchMissions = useCallback(async () => {
+    const resSOS = await fetch('/api/sos');
+    const dataSOS = await resSOS.json();
+    if (Array.isArray(dataSOS)) setSosList(dataSOS);
 
-      const dbId = (user?.publicMetadata as any)?.dbId;
-      const uid = dbId || user?.id;
-      
-      if (uid) {
-        const resTasks = await fetch(`/api/tasks?volunteerId=${uid}`);
-        const dataTasks = await resTasks.json();
-        if (Array.isArray(dataTasks)) {
-          const accMap: Record<string, boolean> = {};
-          const tMap: Record<string, string> = {};
-          dataTasks.forEach((t: any) => {
-            accMap[t.sosId] = true;
-            tMap[t.sosId] = t.id;
-          });
-          setAcceptedMap(accMap);
-          setTaskMap(tMap);
-        }
+    const dbId = (user?.publicMetadata as any)?.dbId || user?.id;
+    if (dbId) {
+      const resTasks = await fetch(`/api/tasks?volunteerId=${dbId}`);
+      const dataTasks = await resTasks.json();
+      if (Array.isArray(dataTasks)) {
+        const accMap: Record<string, boolean> = {};
+        const tMap: Record<string, string> = {};
+        dataTasks.forEach((t: any) => {
+          accMap[t.sosId] = true;
+          tMap[t.sosId] = t.id;
+        });
+        setAcceptedMap(accMap);
+        setTaskMap(tMap);
       }
-    };
+    }
+  }, [user]);
 
+  useEffect(() => {
     if (isLoaded) fetchMissions();
-  }, [isLoaded, user]);
+  }, [isLoaded, fetchMissions]);
+
+  const { useSosRealtime } = require('@/hooks/useSosRealtime');
+  useSosRealtime(fetchMissions);
 
   useSocket({
     sos_received: (newSOS: any) => {

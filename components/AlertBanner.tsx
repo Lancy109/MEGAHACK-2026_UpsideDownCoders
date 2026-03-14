@@ -1,11 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useSocket } from '@/hooks/useSocket';
+import { useAlerts, Alert } from '@/hooks/useAlerts';
 import { useUser } from '@clerk/nextjs';
-
-interface Alert {
-  id: string; message: string; severity: string; area?: string; createdAt: string;
-}
 
 const SEVERITY = {
   CRITICAL: { bg: 'bg-red-600', border: 'border-red-500', text: 'text-red-600', label: 'CRITICAL EMERGENCY', lightBg: 'bg-red-50' },
@@ -17,67 +13,28 @@ const SEVERITY = {
 
 export default function AlertBanner() {
   const { user } = useUser();
+  const { alerts: alertQueue, loading } = useAlerts(10);
   const [activeAlert, setActiveAlert] = useState<Alert | null>(null);
-  const [alertQueue, setAlertQueue] = useState<Alert[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  useSocket({
-    disaster_alert: (alert: Alert) => {
-      setAlertQueue(prev => [alert, ...prev]);
-      setActiveAlert(alert);
-    },
-    broadcast_receive: (data: any) => {
-      const myId = (user?.publicMetadata as any)?.dbId || user?.id;
-      const myRole = (user?.publicMetadata as any)?.role;
-      
-      let shouldShow = false;
-      if (data.target === 'ALL') shouldShow = true;
-      else if (data.target === 'VOLUNTEERS' && myRole === 'VOLUNTEER') shouldShow = true;
-      else if (data.target === 'VICTIMS' && (myRole === 'VICTIM' || !myRole)) shouldShow = true;
-      else if (data.target === 'SELECTED_ALERTS' && data.userIds?.includes(myId)) shouldShow = true;
-
-      // Don't show to NGO staff themselves in the banner (they see it in their success logs)
-      if (myRole === 'NGO') shouldShow = false;
-
-      if (shouldShow) {
-        const alert: Alert = {
-          id: `broadcast_${data.timestamp}`,
-          message: data.message,
-          severity: 'BROADCAST',
-          createdAt: new Date(data.timestamp).toISOString()
-        };
-        setAlertQueue(prev => [alert, ...prev]);
-        setActiveAlert(alert);
-        
-        // Notification sound
-        try {
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.connect(gain); gain.connect(audioCtx.destination);
-          osc.frequency.value = 550; gain.gain.value = 0.1;
-          osc.start(); setTimeout(() => { osc.stop(); audioCtx.close(); }, 400);
-        } catch {}
-      }
-    },
-    alert_dismissed: ({ id }: { id: string }) => {
-      setAlertQueue(prev => prev.filter(a => a.id !== id));
-      setActiveAlert(prev => prev?.id === id ? null : prev);
-    },
-  });
-
-  // Fetch active alerts on mount
+  // Sync active alert with the top of the queue (filtering dismissed)
   useEffect(() => {
-    fetch('/api/alerts')
-      .then(r => r.json())
-      .then((data: Alert[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAlertQueue(data);
-          setActiveAlert(data[0]);
-        }
-      }).catch(() => {});
-  }, []);
+    const nextAlert = alertQueue.find(a => !dismissedIds.has(a.id));
+    if (nextAlert && (!activeAlert || dismissedIds.has(activeAlert.id))) {
+      setActiveAlert(nextAlert || null);
+    } else if (!nextAlert && activeAlert) {
+      setActiveAlert(null);
+    }
+  }, [alertQueue, activeAlert, dismissedIds]);
 
-  if (!activeAlert) return null;
+  const handleDismiss = () => {
+    if (activeAlert) {
+      setDismissedIds(prev => new Set([...prev, activeAlert.id]));
+      setActiveAlert(null);
+    }
+  };
+
+  if (!activeAlert || dismissedIds.has(activeAlert.id)) return null;
 
   const meta = SEVERITY[activeAlert.severity as keyof typeof SEVERITY] || SEVERITY.MEDIUM;
 
@@ -85,7 +42,7 @@ export default function AlertBanner() {
     <div className="fixed inset-0 z-[9999] flex items-start justify-center pointer-events-none">
       {/* Full-page dim for CRITICAL */}
       {(activeAlert.severity === 'CRITICAL' || activeAlert.severity === 'HIGH') && (
-        <div className="absolute inset-0 bg-red-900/40 pointer-events-auto" onClick={() => setActiveAlert(null)} />
+        <div className="absolute inset-0 bg-red-900/40 pointer-events-auto" onClick={handleDismiss} />
       )}
 
       {/* Alert Banner */}
@@ -113,7 +70,7 @@ export default function AlertBanner() {
                 </div>
               </div>
               <button
-                onClick={() => setActiveAlert(null)}
+                onClick={handleDismiss}
                 className="text-slate-400 hover:text-slate-900 font-black text-xl leading-none transition-colors"
               >
                 ✕
@@ -139,7 +96,7 @@ export default function AlertBanner() {
             )}
 
             <button
-              onClick={() => setActiveAlert(null)}
+              onClick={handleDismiss}
               className={`w-full py-4 ${meta.bg} text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl hover:opacity-90 active:scale-95 transition-all`}
             >
               Acknowledge & Prepare

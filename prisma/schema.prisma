@@ -50,21 +50,22 @@ model User {
 }
 
 model SosAlert {
-  id           String    @id @default(cuid())
+  id           String        @id @default(cuid())
   userId       String
   type         SosType
   description  String
   lat          Float
   lng          Float
-  status       SosStatus @default(ACTIVE)
-  source       SosSource @default(INTERNET)
-  relayCount   Int       @default(0)
-  isVoiceSOS   Boolean   @default(false)
+  status       SosStatus     @default(ACTIVE)
+  source       SosSource     @default(INTERNET)
+  relayCount   Int           @default(0)
+  isVoiceSOS   Boolean       @default(false)
   aiSuggestion String?
   photoUrl     String?
-  createdAt    DateTime  @default(now())
-  user         User      @relation(fields: [userId], references: [id])
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id])
   tasks        Task[]
+  chatMessages ChatMessage[]
 }
 
 model Task {
@@ -102,12 +103,17 @@ model Resource {
 model ChatMessage {
   id          String   @id @default(cuid())
   sosId       String
+  sosAlert    SosAlert @relation(fields: [sosId], references: [id], onDelete: Cascade)
   senderId    String
   senderName  String
   senderRole  String
   message     String
   messageType String   @default("TEXT")
+  readBy      String[] @default([])
   createdAt   DateTime @default(now())
+
+  @@index([sosId])
+  @@index([createdAt])
 }
 
 // ─── Feature Suite ───────────────────────────────────

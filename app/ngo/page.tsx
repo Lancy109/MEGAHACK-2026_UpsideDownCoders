@@ -169,6 +169,7 @@ function SOSDrawer({ sos, onClose }: { sos: SOS | null; onClose: () => void }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function NGOCommandCenter() {
+  const { user } = useUser();
   const [sosList, setSosList] = useState<SOS[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
@@ -180,6 +181,7 @@ export default function NGOCommandCenter() {
   const [showSatellite, setShowSatellite] = useState(false);
   const [escalationBanner, setEscalationBanner] = useState(false);
   const [escalationDismissed, setEscalationDismissed] = useState(false);
+  const [selectedChatSOS, setSelectedChatSOS] = useState<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Filter states
@@ -232,10 +234,12 @@ export default function NGOCommandCenter() {
     if (anaRes && !anaRes.error) setAnalytics(anaRes);
   }, []);
 
+  // Supabase Realtime Sync
+  const { useSosRealtime } = require('@/hooks/useSosRealtime');
+  useSosRealtime(fetchAll);
+
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchAll, 30000);
-    return () => clearInterval(interval);
   }, [fetchAll]);
 
   // ── Escalation banner check ────────────────────────────────────────────────
@@ -474,6 +478,7 @@ export default function NGOCommandCenter() {
               { id: 'volunteers', label: 'Volunteers' },
               { id: 'escalation', label: `Escalation${unhandledEscalations > 0 ? ` (${unhandledEscalations})` : ''}` },
               { id: 'disaster_alert', label: 'Disaster Alert Broadcast' },
+              { id: 'chat_monitor', label: 'Chat Monitor' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 ${
@@ -728,7 +733,7 @@ export default function NGOCommandCenter() {
 
           {/* ── DISASTER ALERT BROADCAST TAB ── */}
           {activeTab === 'disaster_alert' && (
-            <div className="p-5 grid grid-cols-1 gap-6">
+            <div className="p-8">
               <div className="bg-red-50/50 border border-red-200 rounded-3xl p-6 shadow-sm">
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b border-red-100">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 animate-pulse">
@@ -789,6 +794,61 @@ export default function NGOCommandCenter() {
                       </li>
                     </ul>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── CHAT MONITOR TAB ── */}
+          {activeTab === 'chat_monitor' && (
+            <div className="p-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">
+                Live Communication Monitor — Select an SOS to view conversation
+              </p>
+              <div className="flex gap-5" style={{ minHeight: 520 }}>
+                {/* SOS List */}
+                <div className="w-72 flex-shrink-0 border-r border-slate-100 pr-5 overflow-y-auto space-y-2">
+                  {sosList.filter(s => s.status !== 'RESOLVED').length === 0 && (
+                    <div className="text-center py-16 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                      No active SOS
+                    </div>
+                  )}
+                  {sosList.filter(s => s.status !== 'RESOLVED').map(sos => (
+                    <button
+                      key={sos.id}
+                      onClick={() => setSelectedChatSOS(sos.id)}
+                      className={`w-full text-left p-3 rounded-2xl border-2 transition-all ${
+                        selectedChatSOS === sos.id
+                          ? 'border-slate-900 bg-slate-50'
+                          : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <TypeBadge type={sos.type} />
+                        <StatusBadge status={sos.status} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-800 truncate">{sos.user?.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">{sos.id.slice(-8).toUpperCase()}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Chat panel */}
+                <div className="flex-1 min-w-0">
+                  {selectedChatSOS ? (
+                    <LiveChat
+                      sosId={selectedChatSOS}
+                      currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'ngo_fallback'}
+                      currentUserName={user?.fullName || 'NGO Staff'}
+                      currentUserRole="NGO"
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl">
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                        Select an SOS alert to monitor its conversation
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
