@@ -65,7 +65,8 @@ export default function LiveChat({
     hasMore,
     loadingMore,
     typingUsers,
-    connStatus,
+    supabaseStatus,
+    socketConnected,
     loadEarlier,
     sendMessage,
     emitTyping,
@@ -118,13 +119,13 @@ export default function LiveChat({
       <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
         <div className="flex items-center gap-3">
           <span className={`w-2.5 h-2.5 rounded-full ${
-            connStatus === 'SUBSCRIBED' ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
-            connStatus === 'unconfigured' ? 'bg-slate-300' : 'bg-amber-400 animate-pulse'
+            (socketConnected || supabaseStatus === 'SUBSCRIBED') ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
+            supabaseStatus === 'unconfigured' && !socketConnected ? 'bg-slate-300' : 'bg-amber-400 animate-pulse'
           }`} />
           <p className="text-slate-900 text-sm font-black uppercase tracking-widest">Mission Comms</p>
           <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-            {connStatus === 'SUBSCRIBED' ? 'Live' :
-             connStatus === 'unconfigured' ? 'Offline mode' : 'Connecting'}
+            {(socketConnected || supabaseStatus === 'SUBSCRIBED') ? 'Live' :
+             supabaseStatus === 'unconfigured' && !socketConnected ? 'Offline mode' : 'Connecting'}
           </span>
         </div>
         <div className="flex gap-2">
