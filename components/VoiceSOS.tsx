@@ -49,7 +49,12 @@ export default function VoiceSOS({ language, onVoiceSOSReady, onTranscriptOnly }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const audioCtx  = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('AudioContext not supported, skipping visualizer.');
+        return;
+      }
+      const audioCtx  = new AudioContextClass();
       const source    = audioCtx.createMediaStreamSource(stream);
       const analyser  = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -82,6 +87,7 @@ export default function VoiceSOS({ language, onVoiceSOSReady, onTranscriptOnly }
   function startListening() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
+      console.error('Speech Recognition API not supported in this browser.');
       setState('error');
       return;
     }
@@ -240,7 +246,7 @@ export default function VoiceSOS({ language, onVoiceSOSReady, onTranscriptOnly }
           onClick={startListening}
           className="w-full relative group/btn"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl blur opacity-10 group-hover/btn:opacity-25 transition" />
+          <div className="absolute -inset-1 bg-linear-to-r from-red-600 to-orange-600 rounded-2xl blur opacity-10 group-hover/btn:opacity-25 transition" />
           <div className="relative flex flex-col items-center justify-center gap-4 bg-slate-800/50 hover:bg-slate-800 border border-white/5 hover:border-red-600/50 text-slate-300 hover:text-white font-black py-8 rounded-2xl transition-all active:scale-[0.98]">
             <div className="w-12 h-12 bg-red-600/20 border border-red-500/30 rounded-full flex items-center justify-center animate-bounce shadow-[0_0_15px_rgba(220,38,38,0.5)]">
               <div className="w-4 h-4 rounded-full bg-red-500" />

@@ -74,9 +74,12 @@ export default function LiveChat({
     refreshing,
   } = useChat(sosId, currentUserId);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingUsers]);
+  // Auto-scroll logic removed as per request
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
+  }, []);
 
   const handleSend = useCallback(async (messageText?: string) => {
     const msg = messageText || input.trim();
@@ -86,7 +89,9 @@ export default function LiveChat({
     if (typingTimer.current) clearTimeout(typingTimer.current);
     emitTyping(false, currentUserName);
     await sendMessage(msg, currentUserName, currentUserRole);
-  }, [input, sending, sendMessage, currentUserName, currentUserRole, emitTyping]);
+    // Manually scroll to bottom only when user sends a message
+    setTimeout(() => scrollToBottom('smooth'), 100);
+  }, [input, sending, sendMessage, currentUserName, currentUserRole, emitTyping, scrollToBottom]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -113,10 +118,10 @@ export default function LiveChat({
   );
 
   return (
-    <div className="flex flex-col bg-white border-2 border-slate-200 rounded-[2rem] overflow-hidden shadow-sm" style={{ height: 460 }}>
+    <div className="flex flex-col bg-white border-2 border-slate-200 rounded-4xl overflow-hidden shadow-sm h-[400px] sm:h-[460px]">
 
       {/* HEADER */}
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
+      <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
         <div className="flex items-center gap-3">
           <span className={`w-2.5 h-2.5 rounded-full ${
             (socketConnected || supabaseStatus === 'SUBSCRIBED') ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.6)]' :
@@ -155,12 +160,12 @@ export default function LiveChat({
 
       {/* QUICK REPLIES STRIP */}
       {showQuick && (
-        <div className="flex gap-2 px-5 py-2 border-b border-slate-100 overflow-x-auto flex-shrink-0 bg-slate-50">
+        <div className="flex gap-2 px-5 py-2 border-b border-slate-100 overflow-x-auto shrink-0 bg-slate-50">
           {quickReplies.map(q => (
             <button
               key={q}
               onClick={() => handleSend(q)}
-              className="flex-shrink-0 text-xs bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-3 py-1.5 rounded-full transition font-medium whitespace-nowrap"
+              className="shrink-0 text-xs bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-3 py-1.5 rounded-full transition font-medium whitespace-nowrap"
             >
               {q}
             </button>
@@ -271,7 +276,7 @@ export default function LiveChat({
       </div>
 
       {/* INPUT */}
-      <div className="px-5 pb-5 pt-3 border-t border-slate-100 bg-white flex-shrink-0">
+      <div className="px-5 pb-5 pt-3 border-t border-slate-100 bg-white shrink-0">
         <div className="flex gap-3 items-end bg-slate-50 border border-slate-200 focus-within:border-slate-400 focus-within:bg-white rounded-2xl p-3 transition-all">
           <textarea
             ref={inputRef}

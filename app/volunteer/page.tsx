@@ -41,6 +41,7 @@ export default function VolunteerPage() {
   const [battery, setBattery]         = useState<number | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [showMap, setShowMap]         = useState(true);
+  const [viewMode, setViewMode]       = useState<'list' | 'map'>('list');
 
   // Unread badge tracking
   const [unreadCount, setUnreadCount] = useState(0);
@@ -199,8 +200,8 @@ export default function VolunteerPage() {
 
   return (
     <div className="h-[calc(100vh-[var(--navbar-height,4rem)])] bg-slate-50 flex overflow-hidden font-sans relative">
-      <div className={`w-full flex-shrink-0 flex flex-col border-r-2 border-slate-200 bg-slate-50 overflow-hidden z-10 transition-all duration-500 ${showMap ? 'md:w-[500px]' : 'md:w-full'}`}>
-        <div className="px-8 py-6 border-b-2 border-slate-200 bg-white flex items-center justify-between z-20 shadow-sm relative">
+      <div className={`w-full shrink-0 flex flex-col border-r-2 border-slate-200 bg-slate-50 overflow-hidden z-20 transition-all duration-500 ${showMap ? 'md:w-[500px]' : 'md:w-full'} ${viewMode === 'map' ? 'hidden md:flex' : 'flex'}`}>
+        <div className="px-6 md:px-8 py-4 md:py-6 border-b-2 border-slate-200 bg-white flex items-center justify-between z-20 shadow-sm relative shrink-0">
           <h2 className="text-slate-900 font-black text-2xl tracking-tight">Mission Control</h2>
           <span className="bg-red-50 border border-red-200 text-red-700 text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-xl flex items-center gap-3">
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
@@ -334,7 +335,14 @@ export default function VolunteerPage() {
                       NEW ALERT
                     </span>
                   )}
-                  <SOSCard sos={sos} onAccept={handleAccept} isAccepted={false} userLocation={userLoc} />
+                  <SOSCard 
+                    sos={sos} 
+                    onAccept={handleAccept} 
+                    isAccepted={false} 
+                    userLocation={userLoc}
+                    disabled={myTasks.length > 0}
+                    disabledReason={myTasks.length > 0 ? 'Complete your active mission first' : undefined}
+                  />
                 </div>
               ))}
             </div>
@@ -342,19 +350,41 @@ export default function VolunteerPage() {
         </div>
       </div>
 
-      {showMap && (
-        <div className="hidden md:block flex-1 bg-white relative slide-in">
+      <div className={`flex-1 relative z-10 bg-slate-100 ${viewMode === 'list' ? 'hidden md:block' : 'block'}`}>
+        {showMap && (
           <SOSMap 
-            sosList={sosList} 
+            sosList={activeSOS} 
             zoom={9} 
             userLocation={userLoc} 
             routingToId={myTasks[0]?.id || null} 
+            onPinClick={(sos: any) => {
+              if (window.innerWidth < 768) setViewMode('list');
+            }}
           />
-          <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(255,255,255,0.8)]" />
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* BROADCAST NOTIFICATION REMOVED - NOW GLOBAL */}
+      {/* MOBILE TOGGLE FAB */}
+      <button
+        onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')}
+        className="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-1002 bg-slate-900 text-white px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl flex items-center gap-3 border-2 border-white/20 active:scale-95 transition-all"
+      >
+        {viewMode === 'list' ? (
+          <><span className="text-lg">🗺️</span> Show Map</>
+        ) : (
+          <><span className="text-lg">📋</span> Show List</>
+        )}
+      </button>
+
+      {/* RE-CENTER BUTTON IF MAP */}
+      {viewMode === 'map' && userLoc && (
+        <button
+          onClick={() => {/* map recenter handled by component prop if needed */}}
+          className="md:hidden fixed bottom-24 right-4 z-1002 bg-white text-slate-900 w-12 h-12 rounded-2xl shadow-xl border-2 border-slate-200 flex items-center justify-center text-xl active:scale-95"
+        >
+          🎯
+        </button>
+      )}
 
       <button 
         onClick={() => setShowMap(!showMap)}

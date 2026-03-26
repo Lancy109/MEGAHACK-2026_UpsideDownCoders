@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useSocket } from '@/hooks/useSocket';
+import Link from 'next/link';
 import { detectGPS } from '@/utils/gps';
 import LiveChat from '@/components/LiveChat';
 import EmergencyChatbot from '@/components/EmergencyChatbot';
@@ -12,7 +13,8 @@ import StatusTimeline from '@/components/StatusTimeline';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useSyncEngine } from '@/hooks/useSyncEngine';
 import { enqueueSOSPacket } from '@/lib/offlineDB';
-import Link from 'next/link';
+import { useTaskRealtime } from '@/hooks/useTaskRealtime';
+import { useSosRealtime } from '@/hooks/useSosRealtime';
 
 const LANGUAGES = ['English', 'हिंदी', 'मराठी'];
 
@@ -154,11 +156,23 @@ export default function VictimPage() {
   const [aiAdvice, setAiAdvice] = useState('');
   const [error, setError] = useState('');
   const [offlineSaved, setOfflineSaved] = useState(false);
-  const [broadcast, setBroadcast] = useState<{message: string} | null>(null);
+  const [activeSOS, setActiveSOS] = useState<any[]>([]);
 
-  const { useTaskRealtime } = require('@/hooks/useTaskRealtime');
-  useTaskRealtime(submittedSosId || '', () => {
-     console.log('[Realtime] Victim Mission Updated');
+  // Fetch active SOS for history
+  useEffect(() => {
+    if (isLoaded && user) {
+      const uId = (user?.publicMetadata as any)?.dbId || user?.id;
+      fetch(`/api/sos?userId=${uId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) setActiveSOS(data);
+        })
+        .catch(console.error);
+    }
+  }, [isLoaded, user]);
+
+  useTaskRealtime(submittedSosId || activeSOS[0]?.id || '', () => {
+    console.log('[Realtime] Victim Mission Updated');
   });
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.English;
@@ -167,7 +181,11 @@ export default function VictimPage() {
     setGpsStatus('detecting');
     detectGPS()
       .then((coords) => { setGps(coords); setGpsStatus('detected'); })
-      .catch(() => setGpsStatus('error'));
+      .catch((err) => { 
+        console.error('GPS Detection Error:', err);
+        setGpsStatus('error');
+        setError('Location detection failed. Please enable GPS and refresh manually.');
+      });
   }, []);
 
   function handleVoiceSOSReady({ transcript, type, isVoice }: { transcript: string; type: string; isVoice: boolean }) {
@@ -185,9 +203,6 @@ export default function VictimPage() {
     setDescription(transcript);
   }
 
-  async function handleSOS() {
-    return handleSOSWithData();
-  }
 
   async function handleSOSWithData(overrides: { description?: string; sosType?: string; isVoice?: boolean; source?: string } = {}) {
     const finalType = overrides.sosType || sosType;
@@ -251,7 +266,7 @@ export default function VictimPage() {
       <div className="min-h-[calc(100vh-4rem)] bg-slate-50 p-4 lg:p-8 overflow-x-hidden">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Dashboard Header */}
-          <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-white rounded-4xl p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center animate-pulse shadow-lg">
                 <div className="w-8 h-4 border-b-4 border-l-4 border-emerald-500 -rotate-45 -mt-1" />
@@ -276,16 +291,16 @@ export default function VictimPage() {
             {/* Left Column: Intelligence & Units */}
             <div className="lg:col-span-8 space-y-6">
               {offlineSaved && (
-                <div className="bg-amber-950 border border-amber-800 rounded-[2rem] p-8 text-center shadow-xl relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-8 opacity-5 font-black text-6xl italic">OFFLINE</div>
-                   <p className="text-amber-400 font-black text-xl mb-2 flex items-center justify-center gap-3">
-                     <span className="text-2xl">⚠️</span> SAVED TO QUEUE
-                   </p>
-                   <p className="text-amber-500/80 text-sm font-bold uppercase tracking-wider mb-6">SOS ID: {Math.random().toString(36).substr(2, 6).toUpperCase()} • TRANSMITTING UPON RECONNECT</p>
-                   <div className="flex items-center justify-center gap-4">
-                     <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
-                     <span className="text-amber-600 text-[11px] font-black uppercase tracking-widest">Priority Uplink Standby</span>
-                   </div>
+                <div className="bg-amber-950 border border-amber-800 rounded-4xl p-8 text-center shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 font-black text-6xl italic">OFFLINE</div>
+                  <p className="text-amber-400 font-black text-xl mb-2 flex items-center justify-center gap-3">
+                    <span className="text-2xl">⚠️</span> SAVED TO QUEUE
+                  </p>
+                  <p className="text-amber-500/80 text-sm font-bold uppercase tracking-wider mb-6">SOS ID: {Math.random().toString(36).substr(2, 6).toUpperCase()} • TRANSMITTING UPON RECONNECT</p>
+                  <div className="flex items-center justify-center gap-4">
+                    <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
+                    <span className="text-amber-600 text-[11px] font-black uppercase tracking-widest">Priority Uplink Standby</span>
+                  </div>
                 </div>
               )}
 
@@ -304,7 +319,7 @@ export default function VictimPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-6">
                 <EmergencyChatbot emergencyType={sosType || 'RESCUE'} language={language} userLocation={gps} />
                 <NearbyServices lat={gps?.lat} lng={gps?.lng} />
               </div>
@@ -314,7 +329,7 @@ export default function VictimPage() {
             <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-8">
               {submittedSosId && !offlineSaved && (
                 <div className="slide-in shadow-2xl">
-                  <LiveChat 
+                  <LiveChat
                     sosId={submittedSosId}
                     currentUserId={(user?.publicMetadata as any)?.dbId || user?.id || 'victim_fallback'}
                     currentUserName={user?.fullName || 'Victim'}
@@ -331,7 +346,7 @@ export default function VictimPage() {
                   showStatusButtons={true}
                 />
               )}
-              
+
               <button
                 onClick={() => { setSubmitted(false); setSosType(null); setDescription(''); setOfflineSaved(false); }}
                 className="w-full bg-white border-2 border-slate-200 text-slate-500 font-black text-xs uppercase tracking-widest py-6 rounded-[1.5rem] hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm active:scale-95"
@@ -346,10 +361,10 @@ export default function VictimPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 lg:p-12">
-      <div className="max-w-7xl mx-auto bg-white p-6 lg:p-12 rounded-[2.5rem] border border-slate-200 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pb-8 border-b border-slate-100">
-          <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-widest uppercase">{t.header}</h1>
+    <div className="min-h-screen bg-slate-50 px-4 py-6 md:p-8 lg:p-12">
+      <div className="max-w-7xl mx-auto bg-white p-5 md:p-10 lg:p-12 rounded-3xl md:rounded-[2.5rem] border border-slate-200 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 md:mb-12 pb-6 md:pb-8 border-b border-slate-100">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 tracking-widest uppercase">{t.header}</h1>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
               <div className={`w-2 h-2 rounded-full ${mounted && isOnline ? 'bg-emerald-500 shadow-sm' : 'bg-red-500 animate-pulse'}`} />
@@ -363,9 +378,33 @@ export default function VictimPage() {
           </div>
         </div>
 
+        {/* ACTIVE SOS TRACKING LINK */}
+        <Link href="/victim/my-sos"
+          className="block w-full bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all rounded-3xl md:rounded-4xl p-4 md:p-6 mb-8 md:mb-12 group relative z-10 cursor-pointer shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                📡
+              </div>
+              <div className="text-left">
+                <h4 className="text-emerald-900 font-black text-xs uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  Track My Active SOS
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                </h4>
+                <p className="text-emerald-700 font-bold text-sm tracking-tight leading-relaxed">
+                  Monitor real-time status, timeline updates, and chat with assigned rescuers.
+                </p>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-white border border-emerald-200 flex items-center justify-center text-emerald-500 shadow-sm group-hover:translateX-2 transition-transform">
+              →
+            </div>
+          </div>
+        </Link>
+
         {/* PANIC LINK */}
         <Link href="/panic"
-          className="block w-full bg-red-50 border border-red-200 hover:bg-red-100 transition-all rounded-[2rem] p-6 mb-12 group relative z-10 cursor-pointer shadow-sm">
+          className="block w-full bg-red-50 border border-red-200 hover:bg-red-100 transition-all rounded-3xl md:rounded-4xl p-4 md:p-6 mb-8 md:mb-12 group relative z-10 cursor-pointer shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-red-700 font-black text-lg uppercase tracking-widest group-hover:text-red-600 transition-colors">Emergency Panic Button</span>
             <span className="text-red-500 animate-pulse group-hover:translate-x-2 transition-transform font-black">→</span>
@@ -384,8 +423,8 @@ export default function VictimPage() {
                     key={lang}
                     onClick={() => setLanguage(lang)}
                     className={`flex-1 py-3 text-xs uppercase tracking-widest rounded-xl font-black transition-all ${language === lang
-                        ? 'bg-white text-slate-900 shadow-md border border-slate-200'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                      ? 'bg-white text-slate-900 shadow-md border border-slate-200'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                       }`}
                   >
                     {lang}
@@ -410,15 +449,15 @@ export default function VictimPage() {
             {/* SOS TYPE */}
             <div className="mb-10">
               <label className="text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] block mb-4">{t.helpLabel}</label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
                 {SOS_TYPES.map((st) => (
                   <button
                     key={st.type}
                     onClick={() => setSosType(st.type)}
-                    className={`py-8 rounded-2xl border-2 font-black text-sm transition-all flex flex-col items-center gap-3 ${st.color} ${sosType === st.type ? `scale-[1.02] shadow-md ${st.active}` : 'bg-white hover:bg-slate-50'
+                    className={`py-6 md:py-8 rounded-2xl border-2 font-black text-sm transition-all flex flex-col items-center gap-3 ${st.color} ${sosType === st.type ? `scale-[1.02] shadow-md ${st.active}` : 'bg-white hover:bg-slate-50'
                       }`}
                   >
-                    <span className="text-3xl font-mono tracking-tighter">{st.icon}</span>
+                    <span className="text-2xl md:text-3xl font-mono tracking-tighter">{st.icon}</span>
                     <span className="text-[10px] leading-tight text-center font-black uppercase tracking-tighter">{t[st.key]}</span>
                   </button>
                 ))}
@@ -473,10 +512,9 @@ export default function VictimPage() {
             )}
 
             <button
-              onClick={handleSOS} disabled={loading}
-              className={`sos-pulse w-full disabled:opacity-50 text-white font-black tracking-[0.2em] text-xl py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] mt-8 ${
-                mounted && isOnline ? 'bg-red-600 hover:bg-red-700 shadow-[0_10px_30px_rgba(239,68,68,0.3)]' : 'bg-amber-600 hover:bg-amber-700 shadow-[0_10px_30px_rgba(217,119,6,0.3)]'
-              }`}
+              onClick={() => handleSOSWithData()} disabled={loading}
+              className={`sos-pulse w-full disabled:opacity-50 text-white font-black tracking-[0.2em] text-xl py-6 rounded-2xl transition-all shadow-2xl active:scale-[0.98] mt-8 ${mounted && isOnline ? 'bg-red-600 hover:bg-red-700 shadow-[0_10px_30px_rgba(239,68,68,0.3)]' : 'bg-amber-600 hover:bg-amber-700 shadow-[0_10px_30px_rgba(217,119,6,0.3)]'
+                }`}
             >
               {loading ? t.transmitting : (mounted && isOnline ? t.btnSendSOS : t.btnQueue)}
             </button>

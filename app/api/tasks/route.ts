@@ -28,6 +28,14 @@ export async function POST(req: Request) {
     if (!sos) return NextResponse.json({ error: 'SOS not found' }, { status: 404 });
     if (sos.status !== 'ACTIVE')
       return NextResponse.json({ error: 'SOS already assigned' }, { status: 409 });
+    
+    // Check if volunteer already has an active task
+    const activeTask = await prisma.task.findFirst({
+      where: { volunteerId, status: { not: 'COMPLETED' } },
+    });
+    if (activeTask) {
+      return NextResponse.json({ error: 'You already have an active mission. Complete it before accepting another.' }, { status: 400 });
+    }
 
     // Look up volunteer name
     const volunteer = await prisma.user.findUnique({ where: { id: volunteerId } });

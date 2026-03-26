@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 const isPublicRoute = createRouteMatcher([
   '/',
   '/api/sos(.*)',
+  '/api/alerts(.*)',
+  '/api/chat(.*)',
   '/api/users(.*)',
   '/api/ai(.*)',
   '/api/sms(.*)',

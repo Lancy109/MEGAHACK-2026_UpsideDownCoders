@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { useSosEventRealtime } from '@/hooks/useSosEventRealtime';
 
 interface SosEvent {
   id: string; sosId: string; event: string; actor?: string; actorName?: string; metadata?: string; createdAt: string;
@@ -45,7 +46,17 @@ export default function StatusTimeline({ sosId, currentUserId, currentUserName, 
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  const { useSosEventRealtime } = require('@/hooks/useSosEventRealtime');
+  useSocket({
+    sos_event: (newEvent: any) => {
+      if (newEvent.sosId === sosId) {
+        setEvents((prev) => {
+          if (prev.find(e => e.id === newEvent.id)) return prev;
+          return [...prev, newEvent].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        });
+      }
+    }
+  });
+
   useSosEventRealtime(sosId, fetchEvents);
 
   const postStatusUpdate = async (status: string) => {
@@ -59,7 +70,7 @@ export default function StatusTimeline({ sosId, currentUserId, currentUserName, 
   };
 
   return (
-    <div className="bg-white border-2 border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+    <div className="bg-white border-2 border-slate-200 rounded-4xl overflow-hidden shadow-sm">
       {/* Header */}
       <div className="px-6 py-4 border-b-2 border-slate-100 bg-slate-50 flex items-center gap-3">
         <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" />

@@ -8,10 +8,10 @@ export function detectGPS(): Promise<{ lat: number; lng: number }> {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       (err) => {
-        console.warn('GPS failed:', err.message, '- Using fallback location.');
-        resolve({ lat: 19.0760, lng: 72.8777 }); // Mumbai fallback for demo
+        console.warn('GPS failed:', err.message);
+        throw new Error('GPS_FAILED');
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 }

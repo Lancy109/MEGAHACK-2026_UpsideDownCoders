@@ -73,7 +73,16 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const all = searchParams.get('all');
-    const where = all ? {} : { status: { in: ['ACTIVE', 'ASSIGNED'] } as any };
+    const userId = searchParams.get('userId');
+    
+    let where: any = {};
+    if (userId) {
+      where.userId = userId;
+    }
+    if (!all) {
+      where.status = { in: ['ACTIVE', 'ASSIGNED'] };
+    }
+
     const alerts = await prisma.sosAlert.findMany({
       where,
       include: {

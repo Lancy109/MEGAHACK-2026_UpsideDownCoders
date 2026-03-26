@@ -2,6 +2,7 @@
 
 import { useUser } from '@clerk/nextjs';
 import { useEffect, useRef } from 'react';
+import { syncOfflineSOS } from '@/utils/offlineQueue';
 
 export default function UserSync() {
   const { user, isLoaded } = useUser();
@@ -29,6 +30,20 @@ export default function UserSync() {
       });
     }
   }, [isLoaded, user]);
+
+  useEffect(() => {
+    // 1. Listen for the exact moment the phone reconnects to the internet
+    window.addEventListener('online', syncOfflineSOS);
+
+    // 2. Try syncing immediately on app load just in case it closed while offline
+    if (navigator.onLine) {
+      syncOfflineSOS();
+    }
+
+    return () => {
+      window.removeEventListener('online', syncOfflineSOS);
+    };
+  }, []);
 
   return null;
 }

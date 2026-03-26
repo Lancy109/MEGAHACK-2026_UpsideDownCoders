@@ -65,7 +65,7 @@ export default function NearbyServices({ lat, lng }: { lat?: number; lng?: numbe
   if (!lat || !lng) return null;
 
   return (
-    <div className="bg-white border-2 border-slate-100 rounded-[2rem] p-8 shadow-sm">
+    <div className="bg-white border-2 border-slate-100 rounded-4xl p-8 shadow-sm">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-y-4 mb-8 border-b-2 border-slate-100 pb-4">
         <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest flex items-center gap-3">
            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -81,7 +81,7 @@ export default function NearbyServices({ lat, lng }: { lat?: number; lng?: numbe
       <div className="flex gap-2 mb-8 overflow-x-auto pb-2 custom-scrollbar">
         {SERVICE_TYPES.map(s => (
           <button key={s.type} onClick={() => setActiveType(s.type)}
-            className={`flex-shrink-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${
+            className={`shrink-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all active:scale-95 ${
               activeType === s.type
                 ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm'
                 : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600'
@@ -98,11 +98,11 @@ export default function NearbyServices({ lat, lng }: { lat?: number; lng?: numbe
           ))}
         </div>
       ) : places.length === 0 ? (
-        <div className="bg-slate-50 rounded-[2rem] py-16 flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
+        <div className="bg-slate-50 rounded-4xl py-16 flex flex-col items-center justify-center border-2 border-dashed border-slate-200">
            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">No vetted facilities found nearby</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
           {places.map(p => (
             <div key={p.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between transition-all hover:bg-white hover:shadow-md group gap-4">
               <div className="flex-1 pr-4">

@@ -15,7 +15,7 @@ const urgencyMap: Record<string, string> = {
   CRITICAL: 'bg-red-50 text-red-800 border-red-200',
 };
 
-export default function SOSCard({ sos, onAccept, isAccepted, taskId, userLocation }: any) {
+export default function SOSCard({ sos, onAccept, isAccepted, taskId, userLocation, disabled = false, disabledReason }: any) {
   const [showAI, setShowAI] = useState(false);
   const [loading, setLoading] = useState(false);
   const colors = typeColors[sos.type] || typeColors.RESCUE;
@@ -86,14 +86,14 @@ export default function SOSCard({ sos, onAccept, isAccepted, taskId, userLocatio
       ) : (
         <button
           onClick={handleAccept}
-          disabled={loading || sos.status === 'ASSIGNED'}
+          disabled={loading || sos.status === 'ASSIGNED' || disabled}
           className={`w-full mt-4 py-4 rounded-xl transition-all shadow-md active:scale-95 text-[10px] uppercase tracking-[0.2em] font-black border-2 ${
-            sos.status === 'ASSIGNED' 
+            (sos.status === 'ASSIGNED' || disabled)
               ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed shadow-none' 
               : 'bg-slate-900 border-slate-900 hover:bg-slate-800 text-white'
           }`}
         >
-          {loading ? 'INITIALIZING...' : sos.status === 'ASSIGNED' ? 'UNIT DISPATCHED' : 'ACCEPT MISSION DEPLOYMENT'}
+          {loading ? 'INITIALIZING...' : (disabled ? disabledReason : (sos.status === 'ASSIGNED' ? 'UNIT DISPATCHED' : 'ACCEPT MISSION DEPLOYMENT'))}
         </button>
       )}
     </div>

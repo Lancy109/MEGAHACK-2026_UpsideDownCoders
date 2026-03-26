@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useSocket } from '@/hooks/useSocket';
 import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
+import { detectGPS } from '@/utils/gps';
 import LiveChat from '@/components/LiveChat';
 
 const SOSMap = dynamic(() => import('@/components/SOSMap'), { ssr: false });
@@ -96,16 +98,16 @@ function SOSDrawer({ sos, onClose }: { sos: SOS | null; onClose: () => void }) {
 
   if (!sos) return null;
   return (
-    <div className="fixed inset-y-0 right-0 z-[2000] w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col slide-in">
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
-        <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-black text-[10px] uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all flex-shrink-0">
+    <div className="fixed inset-y-0 right-0 z-2000 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col slide-in">
+      <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-3 shrink-0">
+        <button onClick={onClose} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-black text-[10px] uppercase tracking-widest bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all shrink-0">
           ← Back
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">SOS Detail View</p>
           <p className="font-black text-slate-900 text-sm truncate">{sos.id.slice(-8).toUpperCase()}</p>
         </div>
-        <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-slate-600 font-black transition-colors flex-shrink-0">✕</button>
+        <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-slate-600 font-black transition-colors shrink-0">✕</button>
       </div>
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         <div className="flex gap-2 flex-wrap">
@@ -354,7 +356,7 @@ export default function NGOCommandCenter() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-slate-50 font-sans pb-20 md:pb-0">
 
       {/* ESCALATION BANNER */}
       {escalationBanner && !escalationDismissed && (
@@ -370,47 +372,67 @@ export default function NGOCommandCenter() {
       )}
 
       {/* HEADER */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm sticky top-0 z-40">
-        <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+      <div className="bg-white border-b border-slate-200 px-4 md:px-6 py-3 md:py-4 shadow-sm sticky top-0 z-40">
+        <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-slate-900 font-black text-xl tracking-tighter">ResQNet NGO Command Center</h1>
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Strategic Oversight — Live Operations</p>
+            <h1 className="text-slate-900 font-black text-lg md:text-xl tracking-tighter">NGO Command Center</h1>
+            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest leading-none mt-1">Strategic Oversight — Live Operations</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
+          <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 md:px-4 py-1.5 md:py-2 rounded-xl">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-emerald-700 text-[10px] font-black uppercase tracking-widest">Live Feed Active</span>
+              <span className="text-emerald-700 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Live Feed</span>
             </div>
-            <button onClick={() => exportCSV(filteredSOS)} className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition-all">Export CSV</button>
+            <button onClick={() => exportCSV(filteredSOS)} className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl hover:bg-slate-700 transition" >Export</button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-screen-2xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
 
         {/* STATS ROW */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
           {[
             { label: 'Active', val: analytics?.active ?? 0, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
             { label: 'Assigned', val: sosList.filter(s => s.status === 'ASSIGNED').length, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
             { label: 'Resolved', val: analytics?.resolved ?? 0, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-            { label: 'Avg Response', val: analytics?.avgResponseTime ?? 0, unit: 'min', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
+            { label: 'Avg Resp', val: analytics?.avgResponseTime ?? 0, unit: 'm', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
             { label: 'Today', val: analytics?.todayAlerts ?? 0, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
-            { label: 'Volunteers', val: volunteers.length, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
-            { label: 'Resolution %', val: analytics?.resolutionRate ?? 0, unit: '%', color: 'text-teal-600', bg: 'bg-teal-50 border-teal-200' },
+            { label: 'Vols', val: volunteers.length, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
+            { label: 'Res %', val: analytics?.resolutionRate ?? 0, unit: '%', color: 'text-teal-600', bg: 'bg-teal-50 border-teal-200' },
           ].map(({ label, val, color, bg, unit }) => (
-            <div key={label} className={`rounded-2xl border p-4 ${bg}`}>
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}</p>
-              <p className={`font-black text-2xl tracking-tight ${color}`}><CountUp target={val} />{unit || ''}</p>
+            <div key={label} className={`rounded-2xl border p-3 md:p-4 ${bg} shadow-sm`}>
+              <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-slate-500 mb-0.5 md:mb-1">{label}</p>
+              <p className={`font-black text-xl md:text-2xl tracking-tight ${color}`}><CountUp target={val} />{unit || ''}</p>
             </div>
           ))}
         </div>
 
+        {/* PANIC LINK */}
+        <Link href="/panic"
+          className="block w-full bg-red-50 border border-red-200 hover:bg-red-100 transition-all rounded-3xl md:rounded-4xl p-4 md:p-6 mb-8 md:mb-12 group relative z-10 cursor-pointer shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-3 h-3 bg-red-600 rounded-full animate-ping" />
+              <p className="text-sm md:text-base font-black uppercase tracking-widest text-red-700">
+                Panic Button — Activate Emergency Protocol
+              </p>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"
+              className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-all">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </div>
+          <p className="text-xs text-red-500 mt-2">
+            This will trigger a system-wide alert to all available volunteers and emergency services. Use with caution.
+          </p>
+        </Link>
+
         {/* MAP + ANALYTICS ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* MAP — 60% */}
-          <div className="lg:col-span-3 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden" style={{ height: 480 }}>
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+          <div className="lg:col-span-3 bg-white rounded-3xl md:rounded-4xl border border-slate-200 shadow-sm overflow-hidden h-[360px] md:h-[480px]">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Tactical Map — Live Positions</p>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -455,7 +477,7 @@ export default function NGOCommandCenter() {
               <div className="space-y-2">
                 {analytics?.hotspots?.map((h, i) => (
                   <div key={i} className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2">
-                    <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-black text-red-600 flex-shrink-0">{i + 1}</div>
+                    <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-[10px] font-black text-red-600 shrink-0">{i + 1}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-slate-700 truncate">{h.lat.toFixed(2)}, {h.lng.toFixed(2)}</p>
                       <p className="text-[9px] text-slate-400">{Object.entries(h.types).map(([t, c]) => `${t}:${c}`).join(' · ')}</p>
@@ -505,7 +527,7 @@ export default function NGOCommandCenter() {
                   <button key={s} onClick={() => setFilterStatus(s)}
                     className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full transition-all ${filterStatus === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{s}</button>
                 ))}
-                <div className="ml-auto flex gap-2">
+                <div className="flex-1 w-full md:w-auto flex flex-wrap md:flex-nowrap gap-2 justify-end">
                   {bulkSelected.size > 0 && (
                     <button onClick={() => exportCSV(filteredSOS.filter(s => bulkSelected.has(s.id)))} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all">
                       Export Selected ({bulkSelected.size})
