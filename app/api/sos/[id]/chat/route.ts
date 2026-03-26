@@ -3,7 +3,7 @@ import prisma from '@/lib/db';
 
 const PAGE_SIZE = 25;
 
-export async function GET(req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { searchParams } = new URL(req.url);
@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: { id: string } | P
   }
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const { senderId, senderName, senderRole, message, messageType = 'TEXT' } = await req.json();
